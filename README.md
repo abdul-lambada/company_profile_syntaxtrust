@@ -1,73 +1,62 @@
-# Welcome to your Lovable project
+# SyntaxTrust
 
-## Project info
+Website profesional dengan harga mahasiswa!  
+Perfect untuk tugas kuliah, portfolio, dan bisnis kecil.  
+Mulai dari **Rp 299K**. Konsultasi gratis!
 
-**URL**: https://lovable.dev/projects/85c926f8-90dd-4d07-8ca9-c490bda9f220
+---
 
-## How can I edit this code?
+## Tentang Project
 
-There are several ways of editing your application.
+**SyntaxTrust** adalah solusi pembuatan website untuk mahasiswa dan bisnis kecil di Indonesia.  
+Kami menawarkan layanan pembuatan website, portfolio, tugas kuliah, UMKM, dan bisnis kecil dengan harga terjangkau, proses cepat, dan hasil profesional.
 
-**Use Lovable**
+- 🚀 Dikerjakan oleh tim mahasiswa & fresh graduate berpengalaman
+- 💻 Teknologi modern: HTML5, CSS3, JavaScript, Laravel, Bootstrap, MySQL, dsb.
+- 📱 Desain responsive & mobile-friendly
+- 🔒 Gratis domain .com & SSL
+- 🛠️ Maintenance & support via WhatsApp
+- 🎓 Cocok untuk tugas kuliah, portfolio, skripsi, dan bisnis kecil
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/85c926f8-90dd-4d07-8ca9-c490bda9f220) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Fitur Utama
 
-**Use your preferred IDE**
+- Pembuatan website portfolio, tugas kuliah, UMKM, dan bisnis kecil
+- Custom project untuk kebutuhan khusus mahasiswa
+- Perbaikan & maintenance website
+- Konsultasi gratis sebelum order
+- Harga transparan & terjangkau
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Cara Order
 
-Follow these steps:
+1. Konsultasi kebutuhan via WhatsApp/email
+2. Pilih paket layanan sesuai kebutuhan
+3. Proses pembuatan website (3-10 hari kerja)
+4. Revisi & training penggunaan
+5. Website siap online!
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Teknologi yang Digunakan
 
-# Step 3: Install the necessary dependencies.
-npm i
+- React, TypeScript, Tailwind CSS
+- Laravel, PHP, MySQL
+- Bootstrap, jQuery
+- Deployment: Vercel/Netlify/Shared Hosting
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
+## Kontak
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- 📧 Email: engineertekno@gmail.com
+- 📱 WhatsApp: +6285156553226
+- 🌐 [syntaxtrust.com](https://syntaxtrust.com)
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## License
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/85c926f8-90dd-4d07-8ca9-c490bda9f220) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+MIT License

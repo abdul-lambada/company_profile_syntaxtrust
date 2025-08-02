@@ -11,11 +11,11 @@ const Hero = () => {
       
       <div className="container mx-auto px-6 text-center relative z-10">
         {/* Logo */}
-        <div className="mb-8 animate-bounce-in">
+        {/* <div className="mb-8 animate-bounce-in">
           <div className="w-24 h-24 mx-auto bg-white/95 rounded-full flex items-center justify-center shadow-xl">
             <Code className="w-12 h-12 text-blue-600" />
           </div>
-        </div>
+        </div> */}
 
         {/* Main Heading */}
         <div className="animate-fade-up" style={{animationDelay: '0.2s'}}>
