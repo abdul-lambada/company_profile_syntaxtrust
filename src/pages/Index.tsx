@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Services from "@/components/Services";
+import ClientCarousel from "@/components/ClientCarousel";
 import TechStack from "@/components/TechStack";
 import Team from "@/components/Team";
 import Portfolio from "@/components/Portfolio";
@@ -16,12 +17,27 @@ const Index = () => {
         <section id="home">
           <Hero />
         </section>
-        <Services />
-        <TechStack />
-        <Portfolio />
-        <Team />
-        <Pricing />
-        <Contact />
+        <section id="services">
+          <Services />
+        </section>
+        <section id="clients">
+          <ClientCarousel />
+        </section>
+        <section id="tech">
+          <TechStack />
+        </section>
+        <section id="portfolio">
+          <Portfolio />
+        </section>
+        <section id="team">
+          <Team />
+        </section>
+        <section id="pricing">
+          <Pricing />
+        </section>
+        <section id="contact">
+          <Contact />
+        </section>
       </main>
       <Footer />
     </div>

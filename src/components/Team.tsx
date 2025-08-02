@@ -1,14 +1,15 @@
 import { Card } from "@/components/ui/card";
 import { Linkedin, Github, Mail } from "lucide-react";
+import LazyImage from "./LazyImage";
 
 const Team = () => {
   const teamMembers = [
     {
-      name: "Ahmad Rizki",
+      name: "Abdul Rizki",
       position: "Full Stack Developer",
-      description: "Expert dalam PHP, Laravel, dan JavaScript dengan pengalaman 5+ tahun dalam pengembangan web.",
+      description: "Mahasiswa semester akhir yang expert dalam PHP, Laravel, dan JavaScript. Sudah membantu 50+ mahasiswa dengan tugas kuliah.",
       image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face",
-      specialties: ["PHP", "Laravel", "Vue.js", "MySQL"],
+      specialties: ["PHP", "Laravel", "Bootstrap", "MySQL"],
       social: {
         linkedin: "#",
         github: "#",
@@ -18,9 +19,9 @@ const Team = () => {
     {
       name: "Sari Indah",
       position: "Frontend Developer",
-      description: "Spesialis UI/UX dengan keahlian dalam React, Angular, dan modern CSS frameworks.",
+      description: "Fresh graduate yang spesialis UI/UX dengan keahlian dalam HTML, CSS, JavaScript, dan Bootstrap.",
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
-      specialties: ["React", "Angular", "CSS3", "Figma"],
+      specialties: ["HTML5", "CSS3", "JavaScript", "Bootstrap"],
       social: {
         linkedin: "#",
         github: "#",
@@ -30,9 +31,9 @@ const Team = () => {
     {
       name: "Budi Santoso",
       position: "Backend Developer",
-      description: "Architect sistem backend yang robust dengan expertise dalam microservices dan database optimization.",
+      description: "Mahasiswa yang fokus pada backend development dengan expertise dalam PHP dan database management.",
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face",
-      specialties: ["Node.js", "Python", "MongoDB", "Docker"],
+      specialties: ["PHP", "MySQL", "CodeIgniter", "API"],
       social: {
         linkedin: "#",
         github: "#",
@@ -42,9 +43,9 @@ const Team = () => {
     {
       name: "Lisa Permata",
       position: "UI/UX Designer",
-      description: "Creative designer yang berfokus pada user experience dan interface design yang intuitive.",
+      description: "Mahasiswa desain yang kreatif dan berfokus pada user experience yang user-friendly untuk mahasiswa.",
       image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face",
-      specialties: ["Figma", "Adobe XD", "Photoshop", "Illustrator"],
+      specialties: ["Figma", "Adobe XD", "Photoshop", "UI/UX"],
       social: {
         linkedin: "#",
         github: "#",
@@ -53,10 +54,10 @@ const Team = () => {
     },
     {
       name: "Andi Pratama",
-      position: "DevOps Engineer",
-      description: "Specialist dalam deployment, CI/CD, dan infrastructure management untuk aplikasi scalable.",
+      position: "Project Manager",
+      description: "Mahasiswa yang mengatur project dan memastikan delivery tepat waktu untuk tugas kuliah dan bisnis kecil.",
       image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=face",
-      specialties: ["AWS", "Docker", "Kubernetes", "Jenkins"],
+      specialties: ["Project Management", "Communication", "Planning", "Support"],
       social: {
         linkedin: "#",
         github: "#",
@@ -65,10 +66,10 @@ const Team = () => {
     },
     {
       name: "Maya Sari",
-      position: "Project Manager",
-      description: "Experienced project manager yang memastikan delivery proyek tepat waktu dan sesuai quality standard.",
+      position: "Customer Support",
+      description: "Mahasiswa yang fokus pada customer service dan memastikan kepuasan mahasiswa dan bisnis kecil.",
       image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=300&h=300&fit=crop&crop=face",
-      specialties: ["Agile", "Scrum", "Jira", "Team Management"],
+      specialties: ["Customer Service", "WhatsApp Support", "Documentation", "Training"],
       social: {
         linkedin: "#",
         github: "#",
@@ -78,18 +79,18 @@ const Team = () => {
   ];
 
   return (
-    <section id="team" className="py-20 bg-gradient-to-br from-gray-50 to-white">
+    <section id="team" className="py-20 bg-white">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-4">
-            <span className="w-2 h-2 bg-primary rounded-full"></span>
+          <div className="inline-flex items-center gap-2 bg-purple-600/10 text-purple-700 px-4 py-2 rounded-full text-sm font-semibold mb-4 border border-purple-200">
+            <span className="w-2 h-2 bg-purple-600 rounded-full"></span>
             Tim Kami
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Bertemu dengan Tim Expert
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+            Tim Mahasiswa yang Berpengalaman
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Tim professional berpengalaman yang siap mewujudkan visi digital Anda dengan keahlian terdepan di bidangnya
+            Tim mahasiswa dan fresh graduate yang sudah berpengalaman membantu ratusan mahasiswa dengan tugas kuliah dan bisnis kecil
           </p>
         </div>
 
@@ -97,18 +98,18 @@ const Team = () => {
           {teamMembers.map((member, index) => (
             <Card 
               key={index} 
-              className="group p-8 text-center hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg bg-white overflow-hidden relative"
+              className="group p-8 text-center hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-200 shadow-lg bg-white overflow-hidden relative"
             >
               {/* Background decoration */}
-              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-purple-600"></div>
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
               
               {/* Profile Image */}
               <div className="relative mb-6">
                 <div className="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-white shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <img 
+                  <LazyImage 
                     src={member.image} 
                     alt={member.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full"
                   />
                 </div>
                 {/* Online indicator */}
@@ -117,10 +118,10 @@ const Team = () => {
 
               {/* Member Info */}
               <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors duration-300">
+                <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition-colors duration-300">
                   {member.name}
                 </h3>
-                <p className="text-primary font-semibold mb-3">
+                <p className="text-purple-600 font-semibold mb-3">
                   {member.position}
                 </p>
                 <p className="text-gray-600 text-sm leading-relaxed">
@@ -134,7 +135,7 @@ const Team = () => {
                   {member.specialties.map((specialty, idx) => (
                     <span 
                       key={idx}
-                      className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary hover:text-white transition-colors duration-200"
+                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium hover:bg-purple-600 hover:text-white transition-colors duration-200"
                     >
                       {specialty}
                     </span>
@@ -170,45 +171,45 @@ const Team = () => {
         {/* Team Stats */}
         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-2">6+</div>
-            <div className="text-gray-600">Expert Developers</div>
+            <div className="text-4xl font-bold text-purple-600 mb-2">6+</div>
+            <div className="text-gray-600">Mahasiswa Expert</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-2">15+</div>
-            <div className="text-gray-600">Combined Years</div>
+            <div className="text-4xl font-bold text-purple-600 mb-2">200+</div>
+            <div className="text-gray-600">Mahasiswa Dibantu</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-2">100+</div>
-            <div className="text-gray-600">Projects Delivered</div>
+            <div className="text-4xl font-bold text-purple-600 mb-2">80+</div>
+            <div className="text-gray-600">Bisnis Kecil</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-primary mb-2">24/7</div>
-            <div className="text-gray-600">Team Support</div>
+            <div className="text-4xl font-bold text-purple-600 mb-2">24/7</div>
+            <div className="text-gray-600">WhatsApp Support</div>
           </div>
         </div>
 
         {/* Join Team CTA */}
         <div className="mt-16 text-center">
-          <Card className="p-8 bg-gradient-to-r from-primary to-purple-600 text-white border-0">
+          <Card className="p-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-0 shadow-xl">
             <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Bergabung dengan Tim Kami
+              Bergabung dengan Tim Mahasiswa Kami
             </h3>
             <p className="text-lg mb-6 opacity-90 max-w-2xl mx-auto">
-              Kami selalu mencari talent terbaik untuk bergabung dengan tim professional kami. 
-              Mari berkembang bersama dalam lingkungan kerja yang supportive dan innovative.
+              Kami selalu mencari mahasiswa berbakat untuk bergabung dengan tim kami. 
+              Dapatkan pengalaman kerja sambil membantu mahasiswa lain dengan project mereka.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a 
                 href="mailto:careers@syntaxtrust.com"
                 className="inline-flex items-center justify-center px-6 py-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors duration-300 font-semibold"
               >
-                Kirim CV Anda
+                Kirim CV Mahasiswa
               </a>
               <a 
                 href="#contact"
-                className="inline-flex items-center justify-center px-6 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 transition-colors duration-300 font-semibold"
+                className="inline-flex items-center justify-center px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-colors duration-300 font-semibold"
               >
-                Hubungi HR
+                Hubungi via WhatsApp
               </a>
             </div>
           </Card>
