@@ -21,22 +21,36 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
-        // Get services
+        // Get testimonials
         try {
-            $stmt = $pdo->query("SELECT * FROM services WHERE is_active = 1 ORDER BY sort_order ASC");
-            $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $featured = $_GET['featured'] ?? null;
+            $service_id = $_GET['service_id'] ?? null;
             
-            // Decode JSON fields
-            foreach ($services as &$service) {
-                if (isset($service['features']) && $service['features']) {
-                    $service['features'] = json_decode($service['features'], true);
-                }
+            $sql = "SELECT t.*, s.name as service_name 
+                    FROM testimonials t 
+                    LEFT JOIN services s ON t.service_id = s.id 
+                    WHERE t.is_active = 1";
+            $params = [];
+            
+            if ($featured) {
+                $sql .= " AND t.is_featured = 1";
             }
             
-            echo json_encode(['success' => true, 'services' => $services]);
+            if ($service_id) {
+                $sql .= " AND t.service_id = ?";
+                $params[] = $service_id;
+            }
+            
+            $sql .= " ORDER BY t.sort_order ASC, t.created_at DESC";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $testimonials = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode(['success' => true, 'testimonials' => $testimonials]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
         break;
         
@@ -46,21 +60,28 @@ switch ($method) {
         $input = json_decode(file_get_contents('php://input'), true);
         
         try {
-            $stmt = $pdo->prepare("INSERT INTO services (name, description, short_description, icon, image, price, duration, features, is_featured, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO testimonials (client_name, client_position, client_company, client_image, content, rating, project_name, service_id, is_featured, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
-                $input['name'] ?? '',
-                $input['description'] ?? '',
-                $input['short_description'] ?? '',
-                $input['icon'] ?? '',
-                $input['image'] ?? '',
-                $input['price'] ?? 0,
-                $input['duration'] ?? '',
-                isset($input['features']) ? json_encode($input['features']) : null,
+                $input['client_name'],
+                $input['client_position'] ?? null,
+                $input['client_company'] ?? null,
+                $input['client_image'] ?? null,
+                $input['content'],
+                $input['rating'] ?? null,
+                $input['project_name'] ?? null,
+                $input['service_id'] ?? null,
                 $input['is_featured'] ?? false,
                 $input['sort_order'] ?? 0
             ]);
             
-            echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
+            $testimonial_id = $pdo->lastInsertId();
+            
+            echo json_encode([
+                'success' => true, 
+                'testimonial' => [
+                    'id' => $testimonial_id
+                ]
+            ]);
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
@@ -80,16 +101,16 @@ switch ($method) {
         }
         
         try {
-            $stmt = $pdo->prepare("UPDATE services SET name = ?, description = ?, short_description = ?, icon = ?, image = ?, price = ?, duration = ?, features = ?, is_featured = ?, sort_order = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE testimonials SET client_name = ?, client_position = ?, client_company = ?, client_image = ?, content = ?, rating = ?, project_name = ?, service_id = ?, is_featured = ?, sort_order = ? WHERE id = ?");
             $stmt->execute([
-                $input['name'] ?? '',
-                $input['description'] ?? '',
-                $input['short_description'] ?? '',
-                $input['icon'] ?? '',
-                $input['image'] ?? '',
-                $input['price'] ?? 0,
-                $input['duration'] ?? '',
-                isset($input['features']) ? json_encode($input['features']) : null,
+                $input['client_name'] ?? '',
+                $input['client_position'] ?? null,
+                $input['client_company'] ?? null,
+                $input['client_image'] ?? null,
+                $input['content'] ?? '',
+                $input['rating'] ?? null,
+                $input['project_name'] ?? null,
+                $input['service_id'] ?? null,
                 $input['is_featured'] ?? false,
                 $input['sort_order'] ?? 0,
                 $id
@@ -114,7 +135,7 @@ switch ($method) {
         }
         
         try {
-            $stmt = $pdo->prepare("UPDATE services SET is_active = 0 WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE testimonials SET is_active = 0 WHERE id = ?");
             $stmt->execute([$id]);
             
             echo json_encode(['success' => true]);
@@ -129,4 +150,4 @@ switch ($method) {
         echo json_encode(['error' => 'Method not allowed']);
         break;
 }
-?>
+?> 

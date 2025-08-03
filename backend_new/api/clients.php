@@ -39,21 +39,19 @@ switch ($method) {
         $input = json_decode(file_get_contents('php://input'), true);
         
         try {
-            $stmt = $pdo->prepare("INSERT INTO clients (name, logo, website_url, description, testimonial, rating, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO clients (name, logo, website_url, description, sort_order) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([
-                $input['name'],
-                $input['logo'],
-                $input['website_url'],
-                $input['description'],
-                $input['testimonial'],
-                $input['rating'],
+                $input['name'] ?? '',
+                $input['logo'] ?? null,
+                $input['website_url'] ?? null,
+                $input['description'] ?? null,
                 $input['sort_order'] ?? 0
             ]);
             
             echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
         break;
         
@@ -70,14 +68,12 @@ switch ($method) {
         }
         
         try {
-            $stmt = $pdo->prepare("UPDATE clients SET name = ?, logo = ?, website_url = ?, description = ?, testimonial = ?, rating = ?, sort_order = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE clients SET name = ?, logo = ?, website_url = ?, description = ?, sort_order = ? WHERE id = ?");
             $stmt->execute([
-                $input['name'],
-                $input['logo'],
-                $input['website_url'],
-                $input['description'],
-                $input['testimonial'],
-                $input['rating'],
+                $input['name'] ?? '',
+                $input['logo'] ?? null,
+                $input['website_url'] ?? null,
+                $input['description'] ?? null,
                 $input['sort_order'] ?? 0,
                 $id
             ]);
@@ -85,7 +81,7 @@ switch ($method) {
             echo json_encode(['success' => true]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
         break;
         

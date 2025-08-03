@@ -248,12 +248,12 @@ include 'includes/header.php';
     </a>
 
                 <!-- Footer -->
+                <!-- End of Footer -->
+                
+            </div>
+            <!-- End of Content Wrapper -->
+            
             <?php require_once 'includes/footer.php'; ?>
-            <!-- End of Footer -->
-
-        </div>
-        <!-- End of Content Wrapper -->
-
     </div>
     <!-- End of Page Wrapper -->
 

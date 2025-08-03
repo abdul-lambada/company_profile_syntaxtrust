@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import LazyImage from "./LazyImage";
+import { clientsService } from "@/services/backendApi";
 
 const ClientCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const clients = [
+  const [clients, setClients] = useState([
     {
       name: "Mahasiswa IT",
       logo: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=150&h=80&fit=crop&crop=center",
@@ -28,24 +28,52 @@ const ClientCarousel = () => {
     {
       name: "Toko Online",
       logo: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=150&h=80&fit=crop&crop=center",
-      category: "E-Commerce"
+      category: "E-commerce"
     },
     {
-      name: "Mahasiswa Marketing",
-      logo: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=150&h=80&fit=crop&crop=center",
-      category: "Landing Page"
+      name: "Bisnis Kafe",
+      logo: "https://images.unsplash.com/photo-1554224155-165aa83f6b3a?w=150&h=80&fit=crop&crop=center",
+      category: "Bisnis Kecil"
     },
     {
-      name: "Bisnis Jasa",
-      logo: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=150&h=80&fit=crop&crop=center",
-      category: "Company Profile"
+      name: "Mahasiswa TI",
+      logo: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150&h=80&fit=crop&crop=center",
+      category: "Tugas Kuliah"
     },
     {
-      name: "Mahasiswa Komunikasi",
-      logo: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&h=80&fit=crop&crop=center",
-      category: "Blog Website"
+      name: "Startup Tech",
+      logo: "https://images.unsplash.com/photo-1551284184-9d8d167c1ef3?w=150&h=80&fit=crop&crop=center",
+      category: "Startup"
     }
-  ];
+  ]);
+  
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await clientsService.getActiveClients();
+        if (response.success) {
+          // Map the API data to the component structure
+          const mappedClients = response.clients.map((client: any) => ({
+            id: client.id,
+            name: client.name,
+            logo: client.logo || `https://images.unsplash.com/photo-${client.id}?w=150&h=80&fit=crop&crop=center`,
+            category: client.category || "Client"
+          }));
+          
+          setClients(mappedClients);
+        }
+      } catch (error) {
+        console.error('Failed to fetch clients:', error);
+        // Keep using the hardcoded data if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchClients();
+  }, []);
 
   // Auto-scroll effect
   useEffect(() => {

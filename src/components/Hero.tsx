@@ -1,7 +1,44 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Code, Sparkles } from "lucide-react";
+import { settingsService } from "@/services/backendApi";
 
 const Hero = () => {
+  const [stats, setStats] = useState({
+    students: "200+",
+    businesses: "80+",
+    price: "Mulai Rp 299K",
+    delivery: "3-7"
+  });
+  
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsService.getSettings();
+        if (response.success) {
+          // Extract statistics from settings
+          const heroStats = {
+            students: response.settings.find((s: any) => s.setting_key === 'hero_students_count')?.setting_value || "200+",
+            businesses: response.settings.find((s: any) => s.setting_key === 'hero_businesses_count')?.setting_value || "80+",
+            price: response.settings.find((s: any) => s.setting_key === 'hero_price_text')?.setting_value || "Mulai Rp 299K",
+            delivery: response.settings.find((s: any) => s.setting_key === 'hero_delivery_time')?.setting_value || "3-7"
+          };
+          
+          setStats(heroStats);
+        }
+      } catch (error) {
+        console.error('Failed to fetch hero statistics:', error);
+        // Keep using the hardcoded data if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSettings();
+  }, []);
+  
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700">
       {/* Floating decorative elements */}
@@ -28,38 +65,44 @@ const Hero = () => {
           </h1>
           
           <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Website profesional dengan harga mahasiswa! Perfect untuk tugas kuliah, portfolio, bisnis kecil, dan startup dengan budget terbatas.
+            Jasa pembuatan website profesional dengan harga terjangkau khusus untuk mahasiswa dan bisnis kecil. 
+            Dapatkan website modern, responsif, dan siap pakai dalam hitungan hari!
           </p>
         </div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-up" style={{animationDelay: '0.4s'}}>
-          <Button variant="default" size="lg" className="group bg-white text-blue-600 hover:bg-gray-100 shadow-xl font-semibold">
-            <Sparkles className="w-5 h-5" />
-            Mulai Proyek Anda
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Button>
-          <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 bg-white/5 backdrop-blur-sm">
-            Lihat Portfolio
+        {/* CTA Button */}
+        <div className="animate-fade-up mb-16" style={{animationDelay: '0.4s'}}>
+          <Button 
+            size="lg" 
+            className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-6 rounded-full font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 group"
+            onClick={() => {
+              const element = document.getElementById('contact');
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          >
+            Mulai Project Sekarang
+            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 animate-fade-up" style={{animationDelay: '0.6s'}}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto animate-fade-up" style={{animationDelay: '0.6s'}}>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">200+</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.students}</div>
             <div className="text-gray-700">Mahasiswa Puas</div>
           </div>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">80+</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.businesses}</div>
             <div className="text-gray-700">Bisnis Kecil</div>
           </div>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">Mulai</div>
-            <div className="text-gray-700">Rp 299K</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.price}</div>
+            <div className="text-gray-700">Harga Terjangkau</div>
           </div>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">3-7</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.delivery}</div>
             <div className="text-gray-700">Hari Selesai</div>
           </div>
         </div>

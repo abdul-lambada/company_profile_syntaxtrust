@@ -1,47 +1,58 @@
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Code, Smartphone, ShoppingCart, Users } from "lucide-react";
 import LazyImage from "./LazyImage";
+import { portfolioService } from "@/services/backendApi";
 
 const Portfolio = () => {
-  const projects = [
-    {
-      title: "Portfolio Mahasiswa",
-      description: "Website portfolio profesional untuk tugas kuliah, magang, dan karir masa depan dengan desain modern",
-      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500&h=300&fit=crop",
-      technologies: ["HTML5", "CSS3", "JavaScript", "Bootstrap"],
-      category: "Portfolio",
-      icon: Code,
-      color: "bg-blue-600"
-    },
-    {
-      title: "Website UMKM",
-      description: "Website sederhana untuk bisnis kecil dengan fitur e-commerce dan payment gateway lokal",
-      image: "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=500&h=300&fit=crop",
-      technologies: ["Laravel", "MySQL", "Bootstrap", "DANA API"],
-      category: "E-Commerce",
-      icon: ShoppingCart,
-      color: "bg-green-600"
-    },
-    {
-      title: "Website Tugas Kuliah",
-      description: "Website untuk tugas mata kuliah dengan sistem manajemen konten dan database",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&h=300&fit=crop",
-      technologies: ["PHP", "MySQL", "Bootstrap", "jQuery"],
-      category: "Academic",
-      icon: Code,
-      color: "bg-purple-600"
-    },
-    {
-      title: "Landing Page Bisnis",
-      description: "Landing page responsif untuk promosi bisnis kecil dengan form kontak dan analytics",
-      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=500&h=300&fit=crop",
-      technologies: ["HTML5", "CSS3", "JavaScript", "Google Analytics"],
-      category: "Landing Page",
-      icon: Users,
-      color: "bg-orange-600"
-    }
-  ];
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await portfolioService.getActivePortfolio();
+        if (response.success) {
+          const mappedProjects = response.portfolio.map((project: any) => {
+            let iconComponent = Code;
+            switch (project.icon) {
+              case 'ShoppingCart':
+                iconComponent = ShoppingCart;
+                break;
+              case 'Smartphone':
+                iconComponent = Smartphone;
+                break;
+              case 'Users':
+                iconComponent = Users;
+                break;
+              default:
+                iconComponent = Code;
+            }
+            
+            return {
+              id: project.id,
+              title: project.title,
+              description: project.description,
+              image: project.image || `https://images.unsplash.com/photo-${project.id}?w=500&h=300&fit=crop`,
+              technologies: project.technologies || [],
+              category: project.category || "Project",
+              icon: iconComponent,
+              color: project.color || "bg-blue-600"
+            };
+          });
+          
+          setProjects(mappedProjects);
+        }
+      } catch (error) {
+        console.error('Failed to fetch portfolio projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProjects();
+  }, []);
 
   return (
     <section id="portfolio" className="py-20 bg-gray-50">

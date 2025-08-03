@@ -26,6 +26,13 @@ switch ($method) {
             $stmt = $pdo->query("SELECT * FROM settings ORDER BY setting_key ASC");
             $settings = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
+            // Decode JSON values
+            foreach ($settings as &$setting) {
+                if ($setting['setting_type'] === 'json') {
+                    $setting['setting_value'] = json_decode($setting['setting_value'], true);
+                }
+            }
+            
             echo json_encode(['success' => true, 'settings' => $settings]);
         } catch (PDOException $e) {
             http_response_code(500);
@@ -39,11 +46,19 @@ switch ($method) {
         $input = json_decode(file_get_contents('php://input'), true);
         
         try {
+            $setting_value = $input['setting_value'];
+            $setting_type = $input['setting_type'] ?? 'text';
+            
+            // Encode JSON values
+            if ($setting_type === 'json' && !is_string($setting_value)) {
+                $setting_value = json_encode($setting_value);
+            }
+            
             $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), setting_type = VALUES(setting_type), description = VALUES(description)");
             $stmt->execute([
                 $input['setting_key'],
-                $input['setting_value'],
-                $input['setting_type'] ?? 'string',
+                $setting_value,
+                $setting_type,
                 $input['description']
             ]);
             
@@ -60,10 +75,18 @@ switch ($method) {
         $input = json_decode(file_get_contents('php://input'), true);
         
         try {
+            $setting_value = $input['setting_value'];
+            $setting_type = $input['setting_type'] ?? 'text';
+            
+            // Encode JSON values
+            if ($setting_type === 'json' && !is_string($setting_value)) {
+                $setting_value = json_encode($setting_value);
+            }
+            
             $stmt = $pdo->prepare("UPDATE settings SET setting_value = ?, setting_type = ?, description = ? WHERE setting_key = ?");
             $stmt->execute([
-                $input['setting_value'],
-                $input['setting_type'] ?? 'string',
+                $setting_value,
+                $setting_type,
                 $input['description'],
                 $input['setting_key']
             ]);

@@ -1,110 +1,61 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Check, Star, Zap, Crown, Rocket } from "lucide-react";
+import { pricingService } from "@/services/backendApi";
 
 const Pricing = () => {
-  const packages = [
-    {
-      name: "Student Basic",
-      subtitle: "Perfect untuk tugas kuliah",
-      price: "299",
-      period: "ribu",
-      description: "Website sederhana untuk tugas mata kuliah, portfolio pribadi, dan project kecil",
-      icon: Zap,
-      color: "bg-blue-600",
-      popular: false,
-      features: [
-        "Desain responsive (mobile-friendly)",
-        "3-5 halaman website",
-        "Optimasi SEO dasar",
-        "Kontak form sederhana",
-        "Hosting gratis 6 bulan",
-        "Domain .com gratis 1 tahun",
-        "SSL Certificate",
-        "1x revisi desain",
-        "Training penggunaan",
-        "Support WhatsApp 1 bulan"
-      ],
-      deliveryTime: "3-5 hari kerja",
-      technologies: ["HTML5", "CSS3", "JavaScript", "Bootstrap"]
-    },
-    {
-      name: "Student Pro",
-      subtitle: "Untuk portfolio & bisnis kecil",
-      price: "599",
-      period: "ribu",
-      description: "Website lengkap untuk portfolio profesional, bisnis kecil, dan UMKM",
-      icon: Star,
-      color: "bg-purple-600",
-      popular: true,
-      features: [
-        "Semua fitur Student Basic",
-        "5-8 halaman website",
-        "CMS untuk update konten",
-        "Galeri foto & portfolio",
-        "Blog/artikel system",
-        "Social media integration",
-        "WhatsApp Business API",
-        "Google Analytics",
-        "Backup otomatis",
-        "3x revisi desain",
-        "Support WhatsApp 3 bulan"
-      ],
-      deliveryTime: "5-7 hari kerja",
-      technologies: ["Laravel", "MySQL", "Bootstrap", "jQuery"]
-    },
-    {
-      name: "Business Starter",
-      subtitle: "Untuk UMKM & startup",
-      price: "999",
-      period: "ribu",
-      description: "Website bisnis lengkap dengan fitur e-commerce dan sistem manajemen",
-      icon: Crown,
-      color: "bg-orange-600",
-      popular: false,
-      features: [
-        "Semua fitur Student Pro",
-        "8-12 halaman website",
-        "E-commerce sederhana",
-        "Payment gateway (DANA/OVO)",
-        "User management system",
-        "Order management",
-        "Inventory system",
-        "Email marketing",
-        "Advanced SEO",
-        "5x revisi desain",
-        "Support WhatsApp 6 bulan"
-      ],
-      deliveryTime: "7-10 hari kerja",
-      technologies: ["Laravel", "Vue.js", "MySQL", "Redis"]
-    },
-    {
-      name: "Custom Project",
-      subtitle: "Solusi khusus mahasiswa",
-      price: "Konsultasi",
-      period: "gratis",
-      description: "Project khusus untuk tugas akhir, penelitian, atau kebutuhan spesifik",
-      icon: Rocket,
-      color: "bg-gradient-to-r from-indigo-600 to-purple-600",
-      popular: false,
-      features: [
-        "Analisis kebutuhan mendalam",
-        "Custom design & development",
-        "Integrasi dengan sistem kampus",
-        "API development",
-        "Database design",
-        "Mobile responsive",
-        "Advanced features",
-        "Documentation lengkap",
-        "Presentasi project",
-        "Support sampai lulus",
-        "Portfolio ready",
-        "GitHub repository"
-      ],
-      deliveryTime: "Sesuai scope project",
-      technologies: ["Custom Stack", "Modern Tech", "Best Practices"]
-    }
-  ];
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const response = await pricingService.getActivePricing();
+        if (response.success) {
+          const mappedPackages = response.pricing_plans.map((plan: any) => {
+            let iconComponent = Zap;
+            switch (plan.icon) {
+              case 'Star':
+                iconComponent = Star;
+                break;
+              case 'Crown':
+                iconComponent = Crown;
+                break;
+              case 'Rocket':
+                iconComponent = Rocket;
+                break;
+              default:
+                iconComponent = Zap;
+            }
+            
+            return {
+              id: plan.id,
+              name: plan.name,
+              subtitle: plan.subtitle || "",
+              price: plan.price || "0",
+              period: plan.period || "ribu",
+              description: plan.description || "",
+              icon: iconComponent,
+              color: plan.color || "bg-blue-600",
+              popular: plan.popular || false,
+              features: plan.features || [],
+              deliveryTime: plan.delivery_time || "3-5 hari kerja",
+              technologies: plan.technologies || []
+            };
+          });
+          
+          setPackages(mappedPackages);
+        }
+      } catch (error) {
+        console.error('Failed to fetch pricing plans:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchPricing();
+  }, []);
 
   return (
     <section id="pricing" className="py-20 bg-gray-50">

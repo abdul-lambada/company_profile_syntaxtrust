@@ -37,7 +37,8 @@ function getUsers() {
     global $pdo;
     
     try {
-        $stmt = $pdo->prepare("SELECT id, username, email, full_name, created_at FROM users ORDER BY created_at DESC");
+        $stmt = $pdo->prepare("SELECT id, username, email, full_name, phone, user_type, profile_image, bio, created_at FROM users ORDER BY created_at DESC");
+        $stmt->execute();
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         echo json_encode(['success' => true, 'users' => $users]);
@@ -52,19 +53,24 @@ function createUser() {
     
     $input = json_decode(file_get_contents('php://input'), true);
     
-    if (!$input || !isset($input['name']) || !isset($input['email']) || !isset($input['password'])) {
+    if (!$input || !isset($input['full_name']) || !isset($input['email']) || !isset($input['password'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Name, email, and password required']);
+        echo json_encode(['error' => 'Full name, email, and password required']);
         return;
     }
     
-    $name = trim($input['name']);
+    $full_name = trim($input['full_name']);
     $email = trim($input['email']);
     $password = password_hash(trim($input['password']), PASSWORD_BCRYPT);
+    $username = trim($input['username'] ?? $email);
+    $phone = trim($input['phone'] ?? '');
+    $user_type = trim($input['user_type'] ?? 'mahasiswa');
+    $profile_image = trim($input['profile_image'] ?? '');
+    $bio = trim($input['bio'] ?? '');
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-        $stmt->execute([$name, $email, $password]);
+        $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, full_name, phone, user_type, profile_image, bio) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$username, $email, $password, $full_name, $phone, $user_type, $profile_image, $bio]);
         
         $userId = $pdo->lastInsertId();
         
@@ -72,8 +78,9 @@ function createUser() {
             'success' => true,
             'user' => [
                 'id' => $userId,
-                'name' => $name,
-                'email' => $email
+                'full_name' => $full_name,
+                'email' => $email,
+                'username' => $username
             ]
         ]);
     } catch (PDOException $e) {
@@ -92,19 +99,24 @@ function updateUser() {
     
     $input = json_decode(file_get_contents('php://input'), true);
     
-    if (!$input || !isset($input['id']) || !isset($input['name']) || !isset($input['email'])) {
+    if (!$input || !isset($input['id']) || !isset($input['full_name']) || !isset($input['email'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'ID, name, and email required']);
+        echo json_encode(['error' => 'ID, full name, and email required']);
         return;
     }
     
     $id = $input['id'];
-    $name = trim($input['name']);
+    $full_name = trim($input['full_name']);
     $email = trim($input['email']);
+    $username = trim($input['username'] ?? $email);
+    $phone = trim($input['phone'] ?? '');
+    $user_type = trim($input['user_type'] ?? 'mahasiswa');
+    $profile_image = trim($input['profile_image'] ?? '');
+    $bio = trim($input['bio'] ?? '');
     
     try {
-        $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ? WHERE id = ?");
-        $stmt->execute([$name, $email, $id]);
+        $stmt = $pdo->prepare("UPDATE users SET full_name = ?, email = ?, username = ?, phone = ?, user_type = ?, profile_image = ?, bio = ? WHERE id = ?");
+        $stmt->execute([$full_name, $email, $username, $phone, $user_type, $profile_image, $bio, $id]);
         
         echo json_encode(['success' => true]);
     } catch (PDOException $e) {

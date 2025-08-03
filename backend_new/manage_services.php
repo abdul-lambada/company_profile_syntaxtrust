@@ -155,79 +155,6 @@ include 'includes/header.php';
     </div>
 </div>
 
-                </div>
-                <!-- /.container-fluid -->
-            </div>
-            <!-- End of Main Content -->
-
-            <?php include 'includes/footer.php'; ?>
-        </div>
-        <!-- End of Content Wrapper -->
-    </div>
-    <!-- End of Page Wrapper -->
-
-    <!-- Scroll to Top Button-->
-    <a class="scroll-to-top rounded" href="#page-top">
-        <i class="fas fa-angle-up"></i>
-    </a>
-
-    <!-- Add Service Modal -->
-    <div class="modal fade" id="addServiceModal" tabindex="-1" role="dialog" aria-labelledby="addServiceModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addServiceModalLabel">Add New Service</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form id="addServiceForm">
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="name">Service Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="short_description">Short Description</label>
-                            <textarea class="form-control" id="short_description" name="short_description" rows="2" required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="description">Full Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="icon">Icon (Font Awesome)</label>
-                            <input type="text" class="form-control" id="icon" name="icon" placeholder="fas fa-cog">
-                        </div>
-                        <div class="form-group">
-                            <label for="price">Price</label>
-                            <input type="number" class="form-control" id="price" name="price" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col-md-6">
-                                <label for="is_featured">Featured</label>
-                                <select class="form-control" id="is_featured" name="is_featured">
-                                    <option value="0">No</option>
-                                    <option value="1">Yes</option>
-                                </select>
-                            </div>
-                            <div class="form-group col-md-6">
-                                <label for="sort_order">Sort Order</label>
-                                <input type="number" class="form-control" id="sort_order" name="sort_order" value="0">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Save Service</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <?php include 'includes/scripts.php'; ?>
-
     <script>
     $(document).ready(function() {
         // Initialize DataTable
@@ -300,12 +227,11 @@ include 'includes/header.php';
         <i class="fas fa-angle-up"></i>
     </a>
 
-                <!-- Footer -->
-            <?php require_once 'includes/footer.php'; ?>
-            <!-- End of Footer -->
+                <!-- Footer Duplicate Removed -->
 
         </div>
         <!-- End of Content Wrapper -->
+        <?php include 'includes/footer.php'; ?>
 
     </div>
     <!-- End of Page Wrapper -->

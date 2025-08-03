@@ -69,26 +69,26 @@ switch ($method) {
         try {
             $stmt = $pdo->prepare("INSERT INTO portfolio (title, description, short_description, client_name, category, technologies, project_url, github_url, image_main, images, start_date, end_date, status, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
-                $input['title'],
-                $input['description'],
-                $input['short_description'],
-                $input['client_name'],
-                $input['category'],
-                json_encode($input['technologies']),
-                $input['project_url'],
-                $input['github_url'],
-                $input['image_main'],
-                json_encode($input['images']),
-                $input['start_date'],
-                $input['end_date'],
+                $input['title'] ?? '',
+                $input['description'] ?? '',
+                $input['short_description'] ?? '',
+                $input['client_name'] ?? '',
+                $input['category'] ?? '',
+                isset($input['technologies']) ? json_encode($input['technologies']) : null,
+                $input['project_url'] ?? '',
+                $input['github_url'] ?? '',
+                $input['image_main'] ?? '',
+                isset($input['images']) ? json_encode($input['images']) : null,
+                $input['start_date'] ?? null,
+                $input['end_date'] ?? null,
                 $input['status'] ?? 'completed',
-                $input['is_featured'] ?? 0
+                $input['is_featured'] ?? false
             ]);
             
             echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
         break;
         
@@ -107,27 +107,27 @@ switch ($method) {
         try {
             $stmt = $pdo->prepare("UPDATE portfolio SET title = ?, description = ?, short_description = ?, client_name = ?, category = ?, technologies = ?, project_url = ?, github_url = ?, image_main = ?, images = ?, start_date = ?, end_date = ?, status = ?, is_featured = ? WHERE id = ?");
             $stmt->execute([
-                $input['title'],
-                $input['description'],
-                $input['short_description'],
-                $input['client_name'],
-                $input['category'],
-                json_encode($input['technologies']),
-                $input['project_url'],
-                $input['github_url'],
-                $input['image_main'],
-                json_encode($input['images']),
-                $input['start_date'],
-                $input['end_date'],
+                $input['title'] ?? '',
+                $input['description'] ?? '',
+                $input['short_description'] ?? '',
+                $input['client_name'] ?? '',
+                $input['category'] ?? '',
+                isset($input['technologies']) ? json_encode($input['technologies']) : null,
+                $input['project_url'] ?? '',
+                $input['github_url'] ?? '',
+                $input['image_main'] ?? '',
+                isset($input['images']) ? json_encode($input['images']) : null,
+                $input['start_date'] ?? null,
+                $input['end_date'] ?? null,
                 $input['status'] ?? 'completed',
-                $input['is_featured'] ?? 0,
+                $input['is_featured'] ?? false,
                 $id
             ]);
             
             echo json_encode(['success' => true]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
         break;
         

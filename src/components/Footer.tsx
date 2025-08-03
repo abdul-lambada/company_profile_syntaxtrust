@@ -1,6 +1,31 @@
+import { useState, useEffect } from "react";
 import { Code2, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { settingsService } from "@/services/backendApi";
 
 const Footer = () => {
+  const [siteName, setSiteName] = useState("SyntaxTrust");
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsService.getSettings();
+        if (response.success) {
+          // Extract site name from settings
+          const name = response.settings.find((s: any) => s.setting_key === 'site_name')?.setting_value || "SyntaxTrust";
+          setSiteName(name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch site name:', error);
+        // Keep using the hardcoded data if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSettings();
+  }, []);
+  
   return (
     <footer className="bg-gray-800 text-white">
       <div className="container mx-auto px-6 py-16">
@@ -11,7 +36,7 @@ const Footer = () => {
               <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
                 <Code2 className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold">SyntaxTrust</span>
+              <span className="text-2xl font-bold">{siteName}</span>
             </div>
             <p className="text-gray-300 mb-6 max-w-md leading-relaxed">
               Mitra terpercaya untuk mahasiswa dan bisnis kecil. Kami menghadirkan website profesional dengan harga terjangkau untuk tugas kuliah, portfolio, dan bisnis Anda.

@@ -55,7 +55,7 @@ function handleLogin() {
                 'success' => true,
                 'user' => [
                     'id' => $user['id'],
-                    'name' => $user['name'],
+                    'name' => $user['full_name'],
                     'email' => $user['email']
                 ]
             ]);

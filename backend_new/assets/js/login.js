@@ -21,7 +21,7 @@ $(document).ready(function() {
         
         // Send AJAX request with JSON data
         $.ajax({
-            url: '/company_profile_syntaxtrust/backend_new/api/auth/login',
+            url: '/company_profile_syntaxtrust/backend_new/api/auth.php',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(loginData),

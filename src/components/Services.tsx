@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { Code, Wrench, Plus, Bug } from "lucide-react";
+import { servicesService } from "@/services/backendApi";
 
 const Services = () => {
-  const services = [
+  const [services, setServices] = useState([
     {
       icon: Code,
       title: "Website Portfolio",
@@ -30,7 +32,55 @@ const Services = () => {
       features: ["Bug Fixing", "Error Resolution", "Code Optimization", "WhatsApp Support"],
       color: "orange"
     }
-  ];
+  ]);
+  
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await servicesService.getActiveServices();
+        if (response.success) {
+          // Map the API data to the component structure
+          const mappedServices = response.services.map((service: any) => {
+            // Map icon names to actual icon components
+            let iconComponent = Code;
+            switch (service.icon) {
+              case 'Wrench':
+                iconComponent = Wrench;
+                break;
+              case 'Plus':
+                iconComponent = Plus;
+                break;
+              case 'Bug':
+                iconComponent = Bug;
+                break;
+              default:
+                iconComponent = Code;
+            }
+            
+            return {
+              id: service.id,
+              icon: iconComponent,
+              title: service.name,
+              description: service.short_description || service.description,
+              features: service.features || [],
+              color: service.color || 'blue'
+            };
+          });
+          
+          setServices(mappedServices);
+        }
+      } catch (error) {
+        console.error('Failed to fetch services:', error);
+        // Keep using the hardcoded data if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchServices();
+  }, []);
 
   const getColorClasses = (color: string) => {
     const colors = {

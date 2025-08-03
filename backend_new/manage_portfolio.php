@@ -202,17 +202,6 @@ include 'includes/header.php';
     </div>
 </div>
 
-                </div>
-                <!-- /.container-fluid -->
-            </div>
-            <!-- End of Main Content -->
-
-            <?php include 'includes/footer.php'; ?>
-        </div>
-        <!-- End of Content Wrapper -->
-    </div>
-    <!-- End of Page Wrapper -->
-
     <!-- Scroll to Top Button-->
     <a class="scroll-to-top rounded" href="#page-top">
         <i class="fas fa-angle-up"></i>
@@ -396,12 +385,11 @@ include 'includes/header.php';
         <i class="fas fa-angle-up"></i>
     </a>
 
-                <!-- Footer -->
-            <?php require_once 'includes/footer.php'; ?>
-            <!-- End of Footer -->
-
-        </div>
-        <!-- End of Content Wrapper -->
+                <!-- Footer Duplicate Removed -->
+                
+            </div>
+            <!-- End of Content Wrapper -->
+            <?php include 'includes/footer.php'; ?>
 
     </div>
     <!-- End of Page Wrapper -->

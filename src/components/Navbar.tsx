@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Code2 } from "lucide-react";
 import { useActiveSection } from "@/hooks/use-active-section";
+import { settingsService } from "@/services/backendApi";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [siteName, setSiteName] = useState("SyntaxTrust");
+  const [loading, setLoading] = useState(true);
 
   const navItems = [
     { name: "Beranda", href: "#home", id: "home" },
@@ -16,6 +19,26 @@ const Navbar = () => {
     { name: "Paket", href: "#pricing", id: "pricing" },
     { name: "Kontak", href: "#contact", id: "contact" },
   ];
+  
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await settingsService.getSettings();
+        if (response.success) {
+          // Extract site name from settings
+          const name = response.settings.find((s: any) => s.setting_key === 'site_name')?.setting_value || "SyntaxTrust";
+          setSiteName(name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch site name:', error);
+        // Keep using the hardcoded data if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSettings();
+  }, []);
 
   const sectionIds = navItems.map(item => item.id);
   const activeSection = useActiveSection(sectionIds);
@@ -37,7 +60,7 @@ const Navbar = () => {
             <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
               <Code2 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-800">SyntaxTrust</span>
+            <span className="text-xl font-bold text-gray-800">{siteName}</span>
           </div>
 
           {/* Desktop Menu */}

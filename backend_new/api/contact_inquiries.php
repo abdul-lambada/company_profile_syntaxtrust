@@ -55,13 +55,18 @@ switch ($method) {
         }
         
         try {
-            $stmt = $pdo->prepare("INSERT INTO contact_inquiries (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO contact_inquiries (name, email, phone, subject, message, service_id, budget_range, timeline, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $input['name'],
                 $input['email'],
                 $input['phone'] ?? null,
                 $input['subject'] ?? null,
-                $input['message']
+                $input['message'],
+                $input['service_id'] ?? null,
+                $input['budget_range'] ?? null,
+                $input['timeline'] ?? null,
+                $_SERVER['REMOTE_ADDR'] ?? null,
+                $_SERVER['HTTP_USER_AGENT'] ?? null
             ]);
             
             echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);

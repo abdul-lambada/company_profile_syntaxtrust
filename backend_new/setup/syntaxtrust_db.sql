@@ -58,11 +58,16 @@ CREATE TABLE services (
 CREATE TABLE pricing_plans (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    subtitle VARCHAR(255),
     price DECIMAL(10,2) NOT NULL,
     currency VARCHAR(3) DEFAULT 'IDR',
     billing_period ENUM('monthly', 'yearly', 'one_time') DEFAULT 'monthly',
     description TEXT,
     features JSON,
+    delivery_time VARCHAR(50),
+    technologies JSON,
+    color VARCHAR(100),
+    icon VARCHAR(50),
     is_popular BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     sort_order INT DEFAULT 0,
@@ -283,7 +288,7 @@ CREATE TABLE notifications (
 
 -- Insert default admin user
 INSERT INTO users (username, email, password_hash, full_name, user_type, is_active, email_verified) VALUES
-('admin', 'admin@syntaxtrust.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrator', 'admin', TRUE, TRUE);
+('admin', 'admin@syntaxtrust.com', '$2y$10$Wb4CBT4YWeo0BhXdV3KSGO6NtlqtfTFEi7/SNaXmUP6dzcnvdNmGu', 'Administrator', 'admin', TRUE, TRUE);
 
 -- Insert sample services
 INSERT INTO services (name, description, short_description, icon, price, duration, features, is_featured, sort_order) VALUES
@@ -293,10 +298,11 @@ INSERT INTO services (name, description, short_description, icon, price, duratio
 ('Digital Marketing', 'Strategi digital marketing komprehensif untuk meningkatkan brand awareness dan penjualan.', 'Strategi marketing digital yang efektif', 'trending-up', 199000, 'Ongoing', '["SEO Optimization", "Social Media Management", "Content Marketing", "Analytics Report"]', FALSE, 4);
 
 -- Insert sample pricing plans
-INSERT INTO pricing_plans (name, price, billing_period, description, features, is_popular, sort_order) VALUES
-('Starter', 299000, 'one_time', 'Paket ideal untuk mahasiswa dan startup', '["1 Halaman Website", "Responsive Design", "Basic SEO", "1 Bulan Support"]', FALSE, 1),
-('Professional', 599000, 'one_time', 'Paket lengkap untuk bisnis menengah', '["5 Halaman Website", "CMS Integration", "Advanced SEO", "6 Bulan Support", "SSL Certificate"]', TRUE, 2),
-('Enterprise', 999000, 'one_time', 'Paket premium untuk bisnis besar', '["Unlimited Pages", "Custom Features", "Priority Support", "1 Tahun Support", "Performance Optimization"]', FALSE, 3);
+INSERT INTO pricing_plans (name, subtitle, price, billing_period, description, features, delivery_time, technologies, color, icon, is_popular, sort_order) VALUES
+('Student Basic', 'Perfect untuk tugas kuliah', 299000, 'one_time', 'Website sederhana untuk tugas mata kuliah, portfolio pribadi, dan project kecil', '["Desain responsive (mobile-friendly)", "3-5 halaman website", "Optimasi SEO dasar", "Kontak form sederhana", "Hosting gratis 6 bulan", "Domain .com gratis 1 tahun", "SSL Certificate", "1x revisi desain", "Training penggunaan", "Support WhatsApp 1 bulan"]', '3-5 hari kerja', '["HTML5", "CSS3", "JavaScript", "Bootstrap"]', 'bg-blue-600', 'zap', FALSE, 1),
+('Student Pro', 'Untuk portfolio & bisnis kecil', 599000, 'one_time', 'Website lengkap untuk portfolio profesional, bisnis kecil, dan UMKM', '["Semua fitur Student Basic", "5-8 halaman website", "CMS untuk update konten", "Galeri foto & portfolio", "Blog/artikel system", "Social media integration", "WhatsApp Business API", "Google Analytics", "Backup otomatis", "3x revisi desain", "Support WhatsApp 3 bulan"]', '5-7 hari kerja', '["Laravel", "MySQL", "Bootstrap", "jQuery"]', 'bg-purple-600', 'star', TRUE, 2),
+('Business Starter', 'Untuk UMKM & startup', 999000, 'one_time', 'Website bisnis lengkap dengan fitur e-commerce dan sistem manajemen', '["Semua fitur Student Pro", "8-12 halaman website", "E-commerce sederhana", "Payment gateway (DANA/OVO)", "User management system", "Order management", "Inventory system", "Email marketing", "Advanced SEO", "5x revisi desain", "Support WhatsApp 6 bulan"]', '7-10 hari kerja', '["Laravel", "Vue.js", "MySQL", "Redis"]', 'bg-orange-600', 'crown', FALSE, 3),
+('Custom Project', 'Solusi khusus mahasiswa', 0, 'one_time', 'Project khusus untuk tugas akhir, penelitian, atau kebutuhan spesifik', '["Analisis kebutuhan mendalam", "Custom design & development", "Integrasi dengan sistem kampus", "API development", "Database design", "Testing & debugging", "Deployment & maintenance", "Dokumentasi lengkap", "Training penggunaan", "Support 3 bulan"]', 'Sesuai kebutuhan', '["Custom"]', 'bg-gradient-to-r from-indigo-600 to-purple-600', 'rocket', FALSE, 4);
 
 -- Insert sample portfolio
 INSERT INTO portfolio (title, description, client_name, category, technologies, project_url, image_main, status, is_featured) VALUES

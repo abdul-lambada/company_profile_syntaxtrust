@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPin, Phone, Mail, Clock, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import ProgressBar from "./ProgressBar";
+import { contactService } from "@/services/backendApi";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -68,50 +69,57 @@ const Contact = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate form
     if (!validateForm()) {
       return;
     }
-
+    
     setIsSubmitting(true);
     setSubmitStatus('idle');
     setSubmitProgress(0);
-
+    
     try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
+      // Simulate API call progress
+      const interval = setInterval(() => {
         setSubmitProgress(prev => {
           if (prev >= 90) {
-            clearInterval(progressInterval);
+            clearInterval(interval);
             return 90;
           }
           return prev + 10;
         });
       }, 200);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setSubmitProgress(100);
-      
-      // Success
-      setSubmitStatus('success');
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        service: "Pembuatan Website Baru",
-        message: ""
+      // Make real API call
+      const response = await contactService.submitInquiry({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        service: formData.service,
+        message: formData.message
       });
       
-      // Reset success message after 5 seconds
-      setTimeout(() => {
-        setSubmitStatus('idle');
-        setSubmitProgress(0);
-      }, 5000);
+      clearInterval(interval);
+      setSubmitProgress(100);
       
+      if (response.success) {
+        // Success
+        setTimeout(() => {
+          setIsSubmitting(false);
+          setSubmitStatus('success');
+          setFormData({
+            name: "",
+            email: "",
+            phone: "",
+            service: "Pembuatan Website Baru",
+            message: ""
+          });
+        }, 500);
+      } else {
+        // Error from server
+        throw new Error(response.error || 'Failed to submit inquiry');
+      }
     } catch (error) {
-      setSubmitStatus('error');
-      setSubmitProgress(0);
       // Reset error message after 5 seconds
       setTimeout(() => setSubmitStatus('idle'), 5000);
     } finally {
