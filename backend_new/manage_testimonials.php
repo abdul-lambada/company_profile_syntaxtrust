@@ -12,40 +12,40 @@ if (!isset($_SESSION['user_id'])) {
 $message = '';
 $message_type = '';
 
-// Delete portfolio item
-if (isset($_POST['delete_portfolio']) && isset($_POST['portfolio_id'])) {
-    $portfolio_id = $_POST['portfolio_id'];
+// Delete testimonial
+if (isset($_POST['delete_testimonial']) && isset($_POST['testimonial_id'])) {
+    $testimonial_id = $_POST['testimonial_id'];
     try {
-        $stmt = $pdo->prepare("DELETE FROM portfolio WHERE id = ?");
-        $stmt->execute([$portfolio_id]);
-        $message = "Portfolio item deleted successfully!";
+        $stmt = $pdo->prepare("DELETE FROM testimonials WHERE id = ?");
+        $stmt->execute([$testimonial_id]);
+        $message = "Testimonial deleted successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
-        $message = "Error deleting portfolio item: " . $e->getMessage();
+        $message = "Error deleting testimonial: " . $e->getMessage();
         $message_type = "danger";
     }
 }
 
-// Toggle portfolio status
-if (isset($_POST['toggle_status']) && isset($_POST['portfolio_id'])) {
-    $portfolio_id = $_POST['portfolio_id'];
+// Toggle testimonial status
+if (isset($_POST['toggle_status']) && isset($_POST['testimonial_id'])) {
+    $testimonial_id = $_POST['testimonial_id'];
     try {
-        $stmt = $pdo->prepare("UPDATE portfolio SET is_active = NOT is_active WHERE id = ?");
-        $stmt->execute([$portfolio_id]);
-        $message = "Portfolio status updated successfully!";
+        $stmt = $pdo->prepare("UPDATE testimonials SET is_active = NOT is_active WHERE id = ?");
+        $stmt->execute([$testimonial_id]);
+        $message = "Testimonial status updated successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
-        $message = "Error updating portfolio status: " . $e->getMessage();
+        $message = "Error updating testimonial status: " . $e->getMessage();
         $message_type = "danger";
     }
 }
 
 // Toggle featured status
-if (isset($_POST['toggle_featured']) && isset($_POST['portfolio_id'])) {
-    $portfolio_id = $_POST['portfolio_id'];
+if (isset($_POST['toggle_featured']) && isset($_POST['testimonial_id'])) {
+    $testimonial_id = $_POST['testimonial_id'];
     try {
-        $stmt = $pdo->prepare("UPDATE portfolio SET is_featured = NOT is_featured WHERE id = ?");
-        $stmt->execute([$portfolio_id]);
+        $stmt = $pdo->prepare("UPDATE testimonials SET is_featured = NOT is_featured WHERE id = ?");
+        $stmt->execute([$testimonial_id]);
         $message = "Featured status updated successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -65,23 +65,23 @@ $where_clause = "";
 $params = [];
 
 if (!empty($search)) {
-    $where_clause = "WHERE title LIKE ? OR description LIKE ? OR client_name LIKE ? OR category LIKE ?";
+    $where_clause = "WHERE client_name LIKE ? OR client_position LIKE ? OR client_company LIKE ? OR content LIKE ? OR project_name LIKE ?";
     $search_param = "%$search%";
-    $params = [$search_param, $search_param, $search_param, $search_param];
+    $params = [$search_param, $search_param, $search_param, $search_param, $search_param];
 }
 
 // Get total count
-$count_sql = "SELECT COUNT(*) as total FROM portfolio $where_clause";
+$count_sql = "SELECT COUNT(*) as total FROM testimonials $where_clause";
 $stmt = $pdo->prepare($count_sql);
 $stmt->execute($params);
 $total_records = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $total_pages = ceil($total_records / $limit);
 
-// Get portfolio items with pagination
-$sql = "SELECT * FROM portfolio $where_clause ORDER BY is_featured DESC, created_at DESC LIMIT $limit OFFSET $offset";
+// Get testimonials with pagination
+$sql = "SELECT t.*, s.name as service_name FROM testimonials t LEFT JOIN services s ON t.service_id = s.id $where_clause ORDER BY t.is_featured DESC, t.sort_order ASC, t.created_at DESC LIMIT $limit OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
-$portfolio_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$testimonials = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Include header
 require_once 'includes/header.php';
@@ -111,9 +111,9 @@ require_once 'includes/header.php';
 
                     <!-- Page Heading -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">Manage Portfolio</h1>
-                        <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#addPortfolioModal">
-                            <i class="fas fa-plus fa-sm text-white-50"></i> Add New Portfolio Item
+                        <h1 class="h3 mb-0 text-gray-800">Manage Testimonials</h1>
+                        <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#addTestimonialModal">
+                            <i class="fas fa-plus fa-sm text-white-50"></i> Add New Testimonial
                         </a>
                     </div>
 
@@ -130,25 +130,25 @@ require_once 'includes/header.php';
                     <!-- Search Bar -->
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Search Portfolio</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">Search Testimonials</h6>
                         </div>
                         <div class="card-body">
                             <form method="GET" class="form-inline">
                                 <div class="form-group mx-sm-3 mb-2">
-                                    <input type="text" class="form-control" name="search" placeholder="Search by title, client, category..." value="<?php echo htmlspecialchars($search); ?>">
+                                    <input type="text" class="form-control" name="search" placeholder="Search by client name, company, project..." value="<?php echo htmlspecialchars($search); ?>">
                                 </div>
                                 <button type="submit" class="btn btn-primary mb-2">Search</button>
                                 <?php if (!empty($search)): ?>
-                                    <a href="manage_portfolio.php" class="btn btn-secondary mb-2 ml-2">Clear</a>
+                                    <a href="manage_testimonials.php" class="btn btn-secondary mb-2 ml-2">Clear</a>
                                 <?php endif; ?>
                             </form>
                         </div>
                     </div>
 
-                    <!-- Portfolio Table -->
+                    <!-- Testimonials Table -->
                     <div class="card shadow mb-4">
                         <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Portfolio List (<?php echo $total_records; ?> total)</h6>
+                            <h6 class="m-0 font-weight-bold text-primary">Testimonials List (<?php echo $total_records; ?> total)</h6>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -156,73 +156,96 @@ require_once 'includes/header.php';
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Image</th>
-                                            <th>Title</th>
-                                            <th>Client</th>
-                                            <th>Category</th>
+                                            <th>Client Photo</th>
+                                            <th>Client Info</th>
+                                            <th>Content</th>
+                                            <th>Rating</th>
+                                            <th>Service</th>
                                             <th>Status</th>
                                             <th>Featured</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($portfolio_items as $item): ?>
+                                        <?php foreach ($testimonials as $testimonial): ?>
                                             <tr>
-                                                <td><?php echo $item['id']; ?></td>
+                                                <td><?php echo $testimonial['id']; ?></td>
                                                 <td>
-                                                    <?php if (!empty($item['image_main'])): ?>
-                                                        <img src="<?php echo htmlspecialchars($item['image_main']); ?>" alt="Portfolio" class="img-thumbnail" width="80" height="60" style="object-fit: cover;">
+                                                    <?php if (!empty($testimonial['client_image'])): ?>
+                                                        <img src="<?php echo htmlspecialchars($testimonial['client_image']); ?>" alt="Client" class="rounded-circle" width="60" height="60" style="object-fit: cover;">
                                                     <?php else: ?>
-                                                        <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 80px; height: 60px;">
-                                                            <i class="fas fa-image"></i>
+                                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                            <i class="fas fa-user"></i>
                                                         </div>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <strong><?php echo htmlspecialchars($item['title']); ?></strong>
-                                                    <?php if (!empty($item['short_description'])): ?>
-                                                        <br><small class="text-muted"><?php echo htmlspecialchars($item['short_description']); ?></small>
+                                                    <strong><?php echo htmlspecialchars($testimonial['client_name']); ?></strong>
+                                                    <?php if (!empty($testimonial['client_position'])): ?>
+                                                        <br><small class="text-muted"><?php echo htmlspecialchars($testimonial['client_position']); ?></small>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($testimonial['client_company'])): ?>
+                                                        <br><small class="text-muted"><?php echo htmlspecialchars($testimonial['client_company']); ?></small>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td><?php echo htmlspecialchars($item['client_name'] ?? 'N/A'); ?></td>
                                                 <td>
-                                                    <span class="badge badge-info">
-                                                        <?php echo htmlspecialchars($item['category'] ?? 'Uncategorized'); ?>
+                                                    <?php echo htmlspecialchars(substr($testimonial['content'], 0, 150) . '...'); ?>
+                                                    <?php if (!empty($testimonial['project_name'])): ?>
+                                                        <br><small class="text-info">Project: <?php echo htmlspecialchars($testimonial['project_name']); ?></small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ($testimonial['rating']): ?>
+                                                        <div class="text-warning">
+                                                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                                <i class="fas fa-star<?php echo $i <= $testimonial['rating'] ? '' : '-o'; ?>"></i>
+                                                            <?php endfor; ?>
+                                                        </div>
+                                                        <small class="text-muted"><?php echo $testimonial['rating']; ?>/5</small>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">No rating</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($testimonial['service_name'])): ?>
+                                                        <span class="badge badge-info"><?php echo htmlspecialchars($testimonial['service_name']); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">N/A</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-<?php echo $testimonial['is_active'] ? 'success' : 'secondary'; ?>">
+                                                        <?php echo $testimonial['is_active'] ? 'Active' : 'Inactive'; ?>
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge badge-<?php echo $item['status'] === 'completed' ? 'success' : ($item['status'] === 'ongoing' ? 'warning' : 'info'); ?>">
-                                                        <?php echo ucfirst($item['status']); ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge badge-<?php echo $item['is_featured'] ? 'warning' : 'light'; ?>">
-                                                        <?php echo $item['is_featured'] ? 'Featured' : 'Regular'; ?>
+                                                    <span class="badge badge-<?php echo $testimonial['is_featured'] ? 'warning' : 'light'; ?>">
+                                                        <?php echo $testimonial['is_featured'] ? 'Featured' : 'Regular'; ?>
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#viewPortfolioModal<?php echo $item['id']; ?>">
+                                                        <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#viewTestimonialModal<?php echo $testimonial['id']; ?>">
                                                             <i class="fas fa-eye"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-sm btn-warning" data-toggle="modal" data-target="#editPortfolioModal<?php echo $item['id']; ?>">
+                                                        <button type="button" class="btn btn-sm btn-warning" data-toggle="modal" data-target="#editTestimonialModal<?php echo $testimonial['id']; ?>">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to toggle this portfolio item\'s status?')">
-                                                            <input type="hidden" name="portfolio_id" value="<?php echo $item['id']; ?>">
-                                                            <button type="submit" name="toggle_status" class="btn btn-sm btn-<?php echo $item['is_active'] ? 'warning' : 'success'; ?>">
-                                                                <i class="fas fa-<?php echo $item['is_active'] ? 'ban' : 'check'; ?>"></i>
+                                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to toggle this testimonial\'s status?')">
+                                                            <input type="hidden" name="testimonial_id" value="<?php echo $testimonial['id']; ?>">
+                                                            <button type="submit" name="toggle_status" class="btn btn-sm btn-<?php echo $testimonial['is_active'] ? 'warning' : 'success'; ?>">
+                                                                <i class="fas fa-<?php echo $testimonial['is_active'] ? 'ban' : 'check'; ?>"></i>
                                                             </button>
                                                         </form>
                                                         <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to toggle featured status?')">
-                                                            <input type="hidden" name="portfolio_id" value="<?php echo $item['id']; ?>">
-                                                            <button type="submit" name="toggle_featured" class="btn btn-sm btn-<?php echo $item['is_featured'] ? 'secondary' : 'warning'; ?>">
+                                                            <input type="hidden" name="testimonial_id" value="<?php echo $testimonial['id']; ?>">
+                                                            <button type="submit" name="toggle_featured" class="btn btn-sm btn-<?php echo $testimonial['is_featured'] ? 'secondary' : 'warning'; ?>">
                                                                 <i class="fas fa-star"></i>
                                                             </button>
                                                         </form>
-                                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this portfolio item? This action cannot be undone.')">
-                                                            <input type="hidden" name="portfolio_id" value="<?php echo $item['id']; ?>">
-                                                            <button type="submit" name="delete_portfolio" class="btn btn-sm btn-danger">
+                                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this testimonial? This action cannot be undone.')">
+                                                            <input type="hidden" name="testimonial_id" value="<?php echo $testimonial['id']; ?>">
+                                                            <button type="submit" name="delete_testimonial" class="btn btn-sm btn-danger">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
                                                         </form>

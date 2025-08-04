@@ -31,6 +31,13 @@
             <span>Services</span></a>
     </li>
 
+    <!-- Nav Item - Pricing Plans -->
+    <li class="nav-item">
+        <a class="nav-link" href="manage_pricing_plans.php">
+            <i class="fas fa-fw fa-tags"></i>
+            <span>Pricing Plans</span></a>
+    </li>
+
     <!-- Nav Item - Portfolio -->
     <li class="nav-item">
         <a class="nav-link" href="manage_portfolio.php">
@@ -64,6 +71,34 @@
         <a class="nav-link" href="manage_users.php">
             <i class="fas fa-fw fa-user"></i>
             <span>Users</span></a>
+    </li>
+
+    <!-- Nav Item - Orders -->
+    <li class="nav-item">
+        <a class="nav-link" href="manage_orders.php">
+            <i class="fas fa-fw fa-shopping-cart"></i>
+            <span>Orders</span></a>
+    </li>
+
+    <!-- Nav Item - Blog Posts -->
+    <li class="nav-item">
+        <a class="nav-link" href="manage_blog_posts.php">
+            <i class="fas fa-fw fa-blog"></i>
+            <span>Blog Posts</span></a>
+    </li>
+
+    <!-- Nav Item - Testimonials -->
+    <li class="nav-item">
+        <a class="nav-link" href="manage_testimonials.php">
+            <i class="fas fa-fw fa-quote-left"></i>
+            <span>Testimonials</span></a>
+    </li>
+
+    <!-- Nav Item - Contact Inquiries -->
+    <li class="nav-item">
+        <a class="nav-link" href="manage_contact_inquiries.php">
+            <i class="fas fa-fw fa-envelope"></i>
+            <span>Contact Inquiries</span></a>
     </li>
 
     <!-- Divider -->
