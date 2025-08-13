@@ -40,6 +40,53 @@ if (isset($_POST['toggle_status']) && isset($_POST['client_id'])) {
     }
 }
 
+// Create new client
+if (isset($_POST['create_client'])) {
+    $name = $_POST['name'];
+    $logo = $_POST['logo'];
+    $website_url = $_POST['website_url'];
+    $description = $_POST['description'];
+    $industry = $_POST['industry'];
+    $location = $_POST['location'];
+    $is_featured = isset($_POST['is_featured']) ? 1 : 0;
+    $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $sort_order = intval($_POST['sort_order']);
+    
+    try {
+        $stmt = $pdo->prepare("INSERT INTO clients (name, logo, website_url, description, industry, location, is_featured, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $logo, $website_url, $description, $industry, $location, $is_featured, $is_active, $sort_order]);
+        $message = "Client created successfully!";
+        $message_type = "success";
+    } catch (PDOException $e) {
+        $message = "Error creating client: " . $e->getMessage();
+        $message_type = "danger";
+    }
+}
+
+// Update client
+if (isset($_POST['update_client'])) {
+    $client_id = $_POST['client_id'];
+    $name = $_POST['name'];
+    $logo = $_POST['logo'];
+    $website_url = $_POST['website_url'];
+    $description = $_POST['description'];
+    $industry = $_POST['industry'];
+    $location = $_POST['location'];
+    $is_featured = isset($_POST['is_featured']) ? 1 : 0;
+    $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $sort_order = intval($_POST['sort_order']);
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE clients SET name = ?, logo = ?, website_url = ?, description = ?, industry = ?, location = ?, is_featured = ?, is_active = ?, sort_order = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$name, $logo, $website_url, $description, $industry, $location, $is_featured, $is_active, $sort_order, $client_id]);
+        $message = "Client updated successfully!";
+        $message_type = "success";
+    } catch (PDOException $e) {
+        $message = "Error updating client: " . $e->getMessage();
+        $message_type = "danger";
+    }
+}
+
 // Search and pagination
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -271,9 +318,210 @@ require_once 'includes/header.php';
         <i class="fas fa-angle-up"></i>
     </a>
 
+    <!-- Add Client Modal -->
+    <div class="modal fade" id="addClientModal" tabindex="-1" role="dialog" aria-labelledby="addClientModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Add New Client</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Client Name *</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Industry</label>
+                                <input type="text" class="form-control" name="industry">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Logo URL</label>
+                            <input type="text" class="form-control" name="logo">
+                        </div>
+                        <div class="form-group">
+                            <label>Website URL</label>
+                            <input type="url" class="form-control" name="website_url">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="is_featured" name="is_featured" value="1">
+                                    <label class="custom-control-label" for="is_featured">Featured Client</label>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" checked>
+                                    <label class="custom-control-label" for="is_active">Active</label>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label>Sort Order</label>
+                                <input type="number" class="form-control" name="sort_order" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" name="create_client" class="btn btn-primary">Save Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <?php foreach ($clients as $client): ?>
+    <!-- View Client Modal -->
+    <div class="modal fade" id="viewClientModal<?php echo $client['id']; ?>" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><?php echo htmlspecialchars($client['name']); ?></h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <?php if (!empty($client['logo'])): ?>
+                                <img src="<?php echo htmlspecialchars($client['logo']); ?>" class="img-fluid mb-3">
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-md-8">
+                            <dl class="row">
+                                <dt class="col-sm-3">Website</dt>
+                                <dd class="col-sm-9">
+                                    <?php if (!empty($client['website_url'])): ?>
+                                        <a href="<?php echo htmlspecialchars($client['website_url']); ?>" target="_blank">
+                                            <?php echo htmlspecialchars($client['website_url']); ?>
+                                        </a>
+                                    <?php else: ?>
+                                        N/A
+                                    <?php endif; ?>
+                                </dd>
+                                <dt class="col-sm-3">Status</dt>
+                                <dd class="col-sm-9">
+                                    <span class="badge badge-<?php echo $client['is_active'] ? 'success' : 'secondary'; ?>">
+                                        <?php echo $client['is_active'] ? 'Active' : 'Inactive'; ?>
+                                    </span>
+                                    <?php if ($client['is_featured']): ?>
+                                        <span class="badge badge-warning">Featured</span>
+                                    <?php endif; ?>
+                                </dd>
+                                <?php if (!empty($client['industry'])): ?>
+                                <dt class="col-sm-3">Industry</dt>
+                                <dd class="col-sm-9"><?php echo htmlspecialchars($client['industry']); ?></dd>
+                                <?php endif; ?>
+                                <?php if (!empty($client['location'])): ?>
+                                <dt class="col-sm-3">Location</dt>
+                                <dd class="col-sm-9"><?php echo htmlspecialchars($client['location']); ?></dd>
+                                <?php endif; ?>
+                                <?php if (!empty($client['description'])): ?>
+                                <dt class="col-sm-12 mt-2">Description</dt>
+                                <dd class="col-sm-12"><?php echo nl2br(htmlspecialchars($client['description'])); ?></dd>
+                                <?php endif; ?>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Client Modal -->
+    <div class="modal fade" id="editClientModal<?php echo $client['id']; ?>" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Edit Client</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="client_id" value="<?php echo $client['id']; ?>">
+                    <div class="modal-body">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Client Name *</label>
+                                <input type="text" class="form-control" name="name" value="<?php echo htmlspecialchars($client['name']); ?>" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Industry</label>
+                                <input type="text" class="form-control" name="industry" value="<?php echo htmlspecialchars($client['industry']); ?>">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Logo URL</label>
+                            <input type="text" class="form-control" name="logo" value="<?php echo htmlspecialchars($client['logo']); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Website URL</label>
+                            <input type="url" class="form-control" name="website_url" value="<?php echo htmlspecialchars($client['website_url']); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea class="form-control" name="description" rows="3"><?php echo htmlspecialchars($client['description']); ?></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="edit_is_featured_<?php echo $client['id']; ?>" name="is_featured" value="1" <?php echo $client['is_featured'] ? 'checked' : ''; ?>>
+                                    <label class="custom-control-label" for="edit_is_featured_<?php echo $client['id']; ?>">Featured Client</label>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="edit_is_active_<?php echo $client['id']; ?>" name="is_active" value="1" <?php echo $client['is_active'] ? 'checked' : ''; ?>>
+                                    <label class="custom-control-label" for="edit_is_active_<?php echo $client['id']; ?>">Active</label>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label>Sort Order</label>
+                                <input type="number" class="form-control" name="sort_order" value="<?php echo $client['sort_order']; ?>">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" name="update_client" class="btn btn-warning">Update Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endforeach; ?>
+
     <!-- Scripts -->
     <?php require_once 'includes/scripts.php'; ?>
-
+    <script>
+    // Initialize Summernote for description fields
+    $(document).ready(function() {
+        $('textarea[name="description"]').summernote({
+            height: 150,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'clear']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ]
+        });
+    });
+    </script>
 </body>
-
 </html>

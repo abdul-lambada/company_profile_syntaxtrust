@@ -1,4 +1,16 @@
 <?php
+// Allow requests from the frontend development server
+header('Access-Control-Allow-Origin: http://localhost:8080');
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(204); // No Content
+    exit();
+}
+
 // Session configuration - must be called before session_start()
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_strict_mode', 1);

@@ -8,7 +8,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PageLoader from "./components/PageLoader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import LoginRedirect from "./LoginRedirect";
+import Login from "./components/Login";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +23,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="/login" element={<LoginRedirect />} />
+              <Route path="/login" element={<Login />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
