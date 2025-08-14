@@ -2,6 +2,31 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
+// Define upload directory
+define('UPLOAD_DIR', 'uploads/settings/');
+
+// Function to handle file uploads
+function handle_upload($file_input_name, $current_image_path = null) {
+    if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
+        if (!is_dir(UPLOAD_DIR)) {
+            mkdir(UPLOAD_DIR, 0777, true);
+        }
+        $file_tmp_path = $_FILES[$file_input_name]['tmp_name'];
+        $file_name = $_FILES[$file_input_name]['name'];
+        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+        $new_file_name = uniqid() . '_' . time() . '.' . $file_extension;
+        $dest_path = UPLOAD_DIR . $new_file_name;
+
+        if (move_uploaded_file($file_tmp_path, $dest_path)) {
+            if ($current_image_path && file_exists($current_image_path)) {
+                unlink($current_image_path);
+            }
+            return $dest_path;
+        }
+    }
+    return $current_image_path;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -13,9 +38,19 @@ $message = '';
 $message_type = '';
 
 // Update setting
-if (isset($_POST['update_setting']) && isset($_POST['setting_id']) && isset($_POST['setting_value'])) {
+if (isset($_POST['update_setting']) && isset($_POST['setting_id'])) {
     $setting_id = $_POST['setting_id'];
-    $setting_value = $_POST['setting_value'];
+
+    // Fetch the setting to check its type
+    $stmt = $pdo->prepare("SELECT * FROM settings WHERE id = ?");
+    $stmt->execute([$setting_id]);
+    $setting = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($setting && $setting['setting_type'] === 'image') {
+        $setting_value = handle_upload('setting_value', $setting['setting_value']);
+    } else {
+        $setting_value = $_POST['setting_value'];
+    }
     try {
         $stmt = $pdo->prepare("UPDATE settings SET setting_value = ? WHERE id = ?");
         $stmt->execute([$setting_value, $setting_id]);
@@ -356,7 +391,7 @@ require_once 'includes/header.php';
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="setting_id" value="<?php echo $setting['id']; ?>">
                         <div class="modal-body">
                             <div class="row">
@@ -377,7 +412,16 @@ require_once 'includes/header.php';
                             </div>
                             <div class="form-group">
                                 <label for="edit_setting_value_<?php echo $setting['id']; ?>">Setting Value *</label>
-                                <?php if ($setting['setting_type'] === 'boolean'): ?>
+                                <?php if ($setting['setting_type'] === 'image'): ?>
+                                    <input type="file" class="form-control-file" id="edit_setting_value_<?php echo $setting['id']; ?>" name="setting_value" accept="image/*">
+                                    <?php if (!empty($setting['setting_value'])): ?>
+                                        <div class="mt-2">
+                                            <small>Current Image:</small><br>
+                                            <img src="<?php echo htmlspecialchars($setting['setting_value']); ?>" alt="Current Image" style="max-width: 200px; height: auto;">
+                                            <a href="<?php echo htmlspecialchars($setting['setting_value']); ?>" target="_blank" class="ml-2">View</a>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php elseif ($setting['setting_type'] === 'boolean'): ?>
                                     <select class="form-control" id="edit_setting_value_<?php echo $setting['id']; ?>" name="setting_value" required>
                                         <option value="1" <?php echo $setting['setting_value'] ? 'selected' : ''; ?>>True</option>
                                         <option value="0" <?php echo !$setting['setting_value'] ? 'selected' : ''; ?>>False</option>

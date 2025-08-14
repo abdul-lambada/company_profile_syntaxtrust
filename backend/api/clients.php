@@ -21,15 +21,60 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
-        // Get clients
+        // Get clients with search and pagination
         try {
-            $stmt = $pdo->query("SELECT * FROM clients WHERE is_active = 1 ORDER BY sort_order ASC");
-            $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $search = isset($_GET['search']) ? $_GET['search'] : '';
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+            $offset = ($page - 1) * $limit;
+
+            // Base query
+            $sql = "FROM clients";
+            $where_clause = " WHERE 1=1";
+            $params = [];
+
+            // Handle search
+            if (!empty($search)) {
+                $where_clause .= " AND (name LIKE ? OR description LIKE ? OR website_url LIKE ?)";
+                $params[] = "%$search%";
+                $params[] = "%$search%";
+                $params[] = "%$search%";
+            }
+
+            // Get total records
+            $count_stmt = $pdo->prepare("SELECT COUNT(*) as total " . $sql . $where_clause);
+            $count_stmt->execute($params);
+            $total_records = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
+            $total_pages = ceil($total_records / $limit);
+
+            // Get records for the current page
+            $data_stmt = $pdo->prepare("SELECT * " . $sql . $where_clause . " ORDER BY sort_order ASC, name ASC LIMIT ? OFFSET ?");
+            $data_params = array_merge($params, [$limit, $offset]);
             
-            echo json_encode(['success' => true, 'clients' => $clients]);
+            // Bind parameters dynamically
+            for ($i = 0; $i < count($params); $i++) {
+                $data_stmt->bindParam($i + 1, $params[$i]);
+            }
+            $data_stmt->bindParam(count($params) + 1, $limit, PDO::PARAM_INT);
+            $data_stmt->bindParam(count($params) + 2, $offset, PDO::PARAM_INT);
+            
+            $data_stmt->execute();
+            $clients = $data_stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode([
+                'success' => true, 
+                'clients' => $clients,
+                'pagination' => [
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total_records' => $total_records,
+                    'total_pages' => $total_pages
+                ]
+            ]);
+
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Database error']);
+            echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
         }
         break;
         

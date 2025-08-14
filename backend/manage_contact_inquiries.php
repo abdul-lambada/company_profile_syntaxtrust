@@ -48,13 +48,11 @@ if (isset($_POST['create_inquiry'])) {
     $phone = $_POST['phone'];
     $subject = $_POST['subject'];
     $message_text = $_POST['message'];
-    $inquiry_type = $_POST['inquiry_type'];
     $status = $_POST['status'];
-    $priority = $_POST['priority'];
-    
+
     try {
-        $stmt = $pdo->prepare("INSERT INTO contact_inquiries (name, email, phone, subject, message, inquiry_type, status, priority) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $email, $phone, $subject, $message_text, $inquiry_type, $status, $priority]);
+        $stmt = $pdo->prepare("INSERT INTO contact_inquiries (name, email, phone, subject, message, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $email, $phone, $subject, $message_text, $status]);
         $message = "Contact inquiry created successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -71,14 +69,13 @@ if (isset($_POST['update_inquiry'])) {
     $phone = $_POST['phone'];
     $subject = $_POST['subject'];
     $message_text = $_POST['message'];
-    $inquiry_type = $_POST['inquiry_type'];
     $status = $_POST['status'];
-    $priority = $_POST['priority'];
-    $admin_notes = $_POST['admin_notes'];
-    
+    $admin_notes = isset($_POST['admin_notes']) ? $_POST['admin_notes'] : null; // optional, column may not exist
+
     try {
-        $stmt = $pdo->prepare("UPDATE contact_inquiries SET name = ?, email = ?, phone = ?, subject = ?, message = ?, inquiry_type = ?, status = ?, priority = ?, admin_notes = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$name, $email, $phone, $subject, $message_text, $inquiry_type, $status, $priority, $admin_notes, $inquiry_id]);
+        // Note: admin_notes column not present in DB; exclude from UPDATE
+        $stmt = $pdo->prepare("UPDATE contact_inquiries SET name = ?, email = ?, phone = ?, subject = ?, message = ?, status = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$name, $email, $phone, $subject, $message_text, $status, $inquiry_id]);
         $message = "Contact inquiry updated successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -94,25 +91,25 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 10;
 $offset = ($page - 1) * $limit;
 
-// Build query
+// Build query (qualify columns with alias c)
 $where_conditions = [];
 $params = [];
 
 if (!empty($search)) {
-    $where_conditions[] = "(name LIKE ? OR email LIKE ? OR subject LIKE ? OR message LIKE ?)";
+    $where_conditions[] = "(c.name LIKE ? OR c.email LIKE ? OR c.subject LIKE ? OR c.message LIKE ?)";
     $search_param = "%$search%";
     $params = array_merge($params, [$search_param, $search_param, $search_param, $search_param]);
 }
 
 if (!empty($status_filter)) {
-    $where_conditions[] = "status = ?";
+    $where_conditions[] = "c.status = ?";
     $params[] = $status_filter;
 }
 
 $where_clause = !empty($where_conditions) ? "WHERE " . implode(" AND ", $where_conditions) : "";
 
-// Get total count
-$count_sql = "SELECT COUNT(*) as total FROM contact_inquiries $where_clause";
+// Get total count (use same alias and join to avoid ambiguity)
+$count_sql = "SELECT COUNT(*) as total FROM contact_inquiries c LEFT JOIN services s ON c.service_id = s.id $where_clause";
 $stmt = $pdo->prepare($count_sql);
 $stmt->execute($params);
 $total_records = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
@@ -251,11 +248,9 @@ require_once 'includes/header.php';
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge badge-<?php 
-                                                        echo $inquiry['status'] === 'new' ? 'danger' : 
-                                                            ($inquiry['status'] === 'read' ? 'warning' : 
-                                                            ($inquiry['status'] === 'replied' ? 'success' : 'secondary')); 
-                                                    ?>">
+                                                    <span class="badge badge-<?php
+                                                                                echo $inquiry['status'] === 'new' ? 'danger' : ($inquiry['status'] === 'read' ? 'warning' : ($inquiry['status'] === 'replied' ? 'success' : 'secondary'));
+                                                                                ?>">
                                                         <?php echo ucfirst($inquiry['status']); ?>
                                                     </span>
                                                 </td>
@@ -310,6 +305,68 @@ require_once 'includes/header.php';
                                     </tbody>
                                 </table>
                             </div>
+                            <?php // View Modals for each inquiry ?>
+                            <?php foreach ($inquiries as $inquiry): ?>
+                                <div class="modal fade" id="viewInquiryModal<?php echo $inquiry['id']; ?>" tabindex="-1" role="dialog" aria-labelledby="viewInquiryModalLabel<?php echo $inquiry['id']; ?>" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-info text-white">
+                                                <h5 class="modal-title" id="viewInquiryModalLabel<?php echo $inquiry['id']; ?>">View Inquiry #<?php echo $inquiry['id']; ?></h5>
+                                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="mb-0 text-muted">Name</label>
+                                                            <div><strong><?php echo htmlspecialchars($inquiry['name']); ?></strong></div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="mb-0 text-muted">Email</label>
+                                                            <div><?php echo htmlspecialchars($inquiry['email']); ?></div>
+                                                        </div>
+                                                        <?php if (!empty($inquiry['phone'])): ?>
+                                                            <div class="form-group">
+                                                                <label class="mb-0 text-muted">Phone</label>
+                                                                <div><?php echo htmlspecialchars($inquiry['phone']); ?></div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <div class="form-group">
+                                                            <label class="mb-0 text-muted">Status</label>
+                                                            <div><span class="badge badge-secondary"><?php echo ucfirst($inquiry['status']); ?></span></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label class="mb-0 text-muted">Subject</label>
+                                                            <div><?php echo htmlspecialchars($inquiry['subject']); ?></div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label class="mb-0 text-muted">Message</label>
+                                                            <div class="border rounded p-2" style="white-space: pre-wrap;"><?php echo htmlspecialchars($inquiry['message']); ?></div>
+                                                        </div>
+                                                        <?php if (!empty($inquiry['service_name'])): ?>
+                                                            <div class="form-group">
+                                                                <label class="mb-0 text-muted">Service</label>
+                                                                <div><span class="badge badge-info"><?php echo htmlspecialchars($inquiry['service_name']); ?></span></div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <div class="form-group">
+                                                            <label class="mb-0 text-muted">Created</label>
+                                                            <div><?php echo date('d M Y H:i', strtotime($inquiry['created_at'])); ?></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
 
                             <!-- Pagination -->
                             <?php if ($total_pages > 1): ?>
@@ -320,13 +377,13 @@ require_once 'includes/header.php';
                                                 <a class="page-link" href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($status_filter); ?>">Previous</a>
                                             </li>
                                         <?php endif; ?>
-                                        
+
                                         <?php for ($i = max(1, $page - 2); $i <= min($total_pages, $page + 2); $i++): ?>
                                             <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
                                                 <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($status_filter); ?>"><?php echo $i; ?></a>
                                             </li>
                                         <?php endfor; ?>
-                                        
+
                                         <?php if ($page < $total_pages): ?>
                                             <li class="page-item">
                                                 <a class="page-link" href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&status=<?php echo urlencode($status_filter); ?>">Next</a>
@@ -385,16 +442,6 @@ require_once 'includes/header.php';
                                     <label for="phone">Phone</label>
                                     <input type="tel" class="form-control" id="phone" name="phone">
                                 </div>
-                                <div class="form-group">
-                                    <label for="inquiry_type">Inquiry Type</label>
-                                    <select class="form-control" id="inquiry_type" name="inquiry_type">
-                                        <option value="general">General Inquiry</option>
-                                        <option value="support">Support</option>
-                                        <option value="sales">Sales</option>
-                                        <option value="feedback">Feedback</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -405,127 +452,23 @@ require_once 'includes/header.php';
                                     <label for="message">Message *</label>
                                     <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="status">Status</label>
-                                            <select class="form-control" id="status" name="status">
-                                                <option value="new">New</option>
-                                                <option value="read">Read</option>
-                                                <option value="replied">Replied</option>
-                                                <option value="closed">Closed</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="priority">Priority</label>
-                                            <select class="form-control" id="priority" name="priority">
-                                                <option value="low">Low</option>
-                                                <option value="medium" selected>Medium</option>
-                                                <option value="high">High</option>
-                                                <option value="urgent">Urgent</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                                <div class="form-group">
+                                    <label for="status">Status *</label>
+                                    <select class="form-control" id="status" name="status" required>
+                                        <option value="new" selected>New</option>
+                                        <option value="read">Read</option>
+                                        <option value="replied">Replied</option>
+                                        <option value="closed">Closed</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" name="create_inquiry" class="btn btn-primary">Save Inquiry</button>
+                        <button type="submit" name="create_inquiry" class="btn btn-primary">Create Inquiry</button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <?php require_once 'includes/scripts.php'; ?>
-
-    <!-- View and Edit Inquiry Modals -->
-    <?php foreach ($inquiries as $inquiry): ?>
-    <!-- View Inquiry Modal -->
-    <div class="modal fade" id="viewInquiryModal<?php echo $inquiry['id']; ?>" tabindex="-1" role="dialog" aria-labelledby="viewInquiryModalLabel<?php echo $inquiry['id']; ?>" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title" id="viewInquiryModalLabel<?php echo $inquiry['id']; ?>">View Inquiry #<?php echo $inquiry['id']; ?></h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Contact Information</h6>
-                            <p>
-                                <strong>Name:</strong> <?php echo htmlspecialchars($inquiry['name']); ?><br>
-                                <strong>Email:</strong> <a href="mailto:<?php echo htmlspecialchars($inquiry['email']); ?>"><?php echo htmlspecialchars($inquiry['email']); ?></a><br>
-                                <?php if (!empty($inquiry['phone'])): ?>
-                                    <strong>Phone:</strong> <?php echo htmlspecialchars($inquiry['phone']); ?><br>
-                                <?php endif; ?>
-                                <strong>Inquiry Type:</strong> <?php echo ucfirst($inquiry['inquiry_type']); ?><br>
-                                <strong>Status:</strong> 
-                                <span class="badge badge-<?php 
-                                    switch($inquiry['status']) {
-                                        case 'new': echo 'primary'; break;
-                                        case 'read': echo 'info'; break;
-                                        case 'replied': echo 'success'; break;
-                                        case 'closed': echo 'secondary'; break;
-                                        default: echo 'light';
-                                    }
-                                ?>">
-                                    <?php echo ucfirst($inquiry['status']); ?>
-                                </span><br>
-                                <strong>Priority:</strong> 
-                                <span class="badge badge-<?php 
-                                    switch($inquiry['priority']) {
-                                        case 'low': echo 'info'; break;
-                                        case 'medium': echo 'primary'; break;
-                                        case 'high': echo 'warning'; break;
-                                        case 'urgent': echo 'danger'; break;
-                                        default: echo 'light';
-                                    }
-                                ?>">
-                                    <?php echo ucfirst($inquiry['priority']); ?>
-                                </span>
-                            </p>
-                            <h6>Dates</h6>
-                            <p>
-                                <strong>Created:</strong> <?php echo date('M d, Y H:i', strtotime($inquiry['created_at'])); ?><br>
-                                <strong>Last Updated:</strong> <?php echo date('M d, Y H:i', strtotime($inquiry['updated_at'])); ?>
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Message Details</h6>
-                            <div class="card mb-3">
-                                <div class="card-header bg-light">
-                                    <strong>Subject:</strong> <?php echo htmlspecialchars($inquiry['subject']); ?>
-                                </div>
-                                <div class="card-body">
-                                    <p class="card-text"><?php echo nl2br(htmlspecialchars($inquiry['message'])); ?></p>
-                                </div>
-                            </div>
-                            
-                            <?php if (!empty($inquiry['admin_notes'])): ?>
-                            <h6>Admin Notes</h6>
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <p class="card-text"><?php echo nl2br(htmlspecialchars($inquiry['admin_notes'])); ?></p>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <a href="#" class="btn btn-warning" data-dismiss="modal" data-toggle="modal" data-target="#editInquiryModal<?php echo $inquiry['id']; ?>">
-                        <i class="fas fa-edit"></i> Edit Inquiry
-                    </a>
-                </div>
             </div>
         </div>
     </div>
@@ -557,14 +500,7 @@ require_once 'includes/header.php';
                                     <input type="tel" class="form-control" id="phone_edit<?php echo $inquiry['id']; ?>" name="phone" value="<?php echo htmlspecialchars($inquiry['phone']); ?>">
                                 </div>
                                 <div class="form-group">
-                                    <label for="inquiry_type_edit<?php echo $inquiry['id']; ?>">Inquiry Type</label>
-                                    <select class="form-control" id="inquiry_type_edit<?php echo $inquiry['id']; ?>" name="inquiry_type">
-                                        <option value="general" <?php echo $inquiry['inquiry_type'] == 'general' ? 'selected' : ''; ?>>General Inquiry</option>
-                                        <option value="support" <?php echo $inquiry['inquiry_type'] == 'support' ? 'selected' : ''; ?>>Support</option>
-                                        <option value="sales" <?php echo $inquiry['inquiry_type'] == 'sales' ? 'selected' : ''; ?>>Sales</option>
-                                        <option value="feedback" <?php echo $inquiry['inquiry_type'] == 'feedback' ? 'selected' : ''; ?>>Feedback</option>
-                                        <option value="other" <?php echo $inquiry['inquiry_type'] == 'other' ? 'selected' : ''; ?>>Other</option>
-                                    </select>
+                                    <!-- Inquiry Type edit field removed: not stored in DB -->
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -590,19 +526,13 @@ require_once 'includes/header.php';
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="priority_edit<?php echo $inquiry['id']; ?>">Priority</label>
-                                            <select class="form-control" id="priority_edit<?php echo $inquiry['id']; ?>" name="priority">
-                                                <option value="low" <?php echo $inquiry['priority'] == 'low' ? 'selected' : ''; ?>>Low</option>
-                                                <option value="medium" <?php echo $inquiry['priority'] == 'medium' ? 'selected' : ''; ?>>Medium</option>
-                                                <option value="high" <?php echo $inquiry['priority'] == 'high' ? 'selected' : ''; ?>>High</option>
-                                                <option value="urgent" <?php echo $inquiry['priority'] == 'urgent' ? 'selected' : ''; ?>>Urgent</option>
-                                            </select>
+                                            <!-- Priority edit field removed: not stored in DB -->
                                         </div>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="admin_notes_edit<?php echo $inquiry['id']; ?>">Admin Notes</label>
-                                    <textarea class="form-control" id="admin_notes_edit<?php echo $inquiry['id']; ?>" name="admin_notes" rows="2" placeholder="Add internal notes here (not visible to customer)"><?php echo htmlspecialchars($inquiry['admin_notes']); ?></textarea>
+                                    <textarea class="form-control" id="admin_notes_edit<?php echo $inquiry['id']; ?>" name="admin_notes" rows="2" placeholder="Add internal notes here (not visible to customer)"><?php echo isset($inquiry['admin_notes']) ? htmlspecialchars($inquiry['admin_notes']) : ''; ?></textarea>
                                 </div>
                             </div>
                         </div>
@@ -615,8 +545,10 @@ require_once 'includes/header.php';
             </div>
         </div>
     </div>
-    <?php endforeach; ?>
+</div>
 
+
+    <?php require_once 'includes/scripts.php'; ?>
 </body>
 
 </html>

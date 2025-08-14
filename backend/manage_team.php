@@ -2,6 +2,35 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
+// Define upload directory
+define('UPLOAD_DIR', 'uploads/team/');
+
+// Function to handle file uploads
+function handle_upload($file_input_name, $current_image_path = null) {
+    if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
+        // Create upload directory if it doesn't exist
+        if (!is_dir(UPLOAD_DIR)) {
+            mkdir(UPLOAD_DIR, 0777, true);
+        }
+
+        $file_tmp_path = $_FILES[$file_input_name]['tmp_name'];
+        $file_name = $_FILES[$file_input_name]['name'];
+        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+        $new_file_name = uniqid() . '_' . time() . '.' . $file_extension;
+        $dest_path = UPLOAD_DIR . $new_file_name;
+
+        if (move_uploaded_file($file_tmp_path, $dest_path)) {
+            // If it's an update and there was an old image, delete it
+            if ($current_image_path && file_exists($current_image_path)) {
+                unlink($current_image_path);
+            }
+            return $dest_path;
+        }
+    }
+    // Return the old path if no new file is uploaded during an update
+    return $current_image_path;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -16,8 +45,21 @@ $message_type = '';
 if (isset($_POST['delete_team']) && isset($_POST['team_id'])) {
     $team_id = $_POST['team_id'];
     try {
+        // First, get the image path to delete the file
+        $stmt = $pdo->prepare("SELECT profile_image FROM team WHERE id = ?");
+        $stmt->execute([$team_id]);
+        $item = $stmt->fetch(PDO::FETCH_ASSOC);
+        $image_to_delete = $item ? $item['profile_image'] : null;
+
+        // Then, delete the record from the database
         $stmt = $pdo->prepare("DELETE FROM team WHERE id = ?");
         $stmt->execute([$team_id]);
+
+        // Finally, delete the image file if it exists
+        if ($stmt->rowCount() > 0 && $image_to_delete && file_exists($image_to_delete)) {
+            unlink($image_to_delete);
+        }
+
         $message = "Team member deleted successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -45,9 +87,9 @@ if (isset($_POST['create_team'])) {
     $name = $_POST['name'];
     $position = $_POST['position'];
     $bio = $_POST['bio'];
-    $profile_image = $_POST['profile_image'];
     $email = $_POST['email'];
     $phone = $_POST['phone'];
+    $profile_image = handle_upload('profile_image');
     // Initialize social links with empty values if not set
     $social_links = [
         'linkedin' => $_POST['linkedin_url'] ?? '',
@@ -57,13 +99,14 @@ if (isset($_POST['create_team'])) {
     
     // Filter out empty values and encode to JSON
     $social_links = !empty(array_filter($social_links)) ? json_encode(array_filter($social_links)) : null;
-    $skills = $_POST['skills'] ? json_encode(explode(',', $_POST['skills'])) : null;
+    $skills = !empty($_POST['skills']) ? json_encode(array_map('trim', explode(',', $_POST['skills']))) : null;
+    $experience_years = !empty($_POST['experience_years']) ? intval($_POST['experience_years']) : null;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $sort_order = intval($_POST['sort_order']);
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO team (name, position, bio, profile_image, email, phone, social_links, skills, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$name, $position, $bio, $profile_image, $email, $phone, $social_links, $skills, $is_active, $sort_order]);
+        $stmt = $pdo->prepare("INSERT INTO team (name, position, bio, profile_image, email, phone, social_links, skills, experience_years, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $position, $bio, $profile_image, $email, $phone, $social_links, $skills, $experience_years, $is_active, $sort_order]);
         $message = "Team member created successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -75,12 +118,19 @@ if (isset($_POST['create_team'])) {
 // Update team member
 if (isset($_POST['update_team'])) {
     $team_id = $_POST['team_id'];
+
+    // Fetch current image path
+    $stmt = $pdo->prepare("SELECT profile_image FROM team WHERE id = ?");
+    $stmt->execute([$team_id]);
+    $current_item = $stmt->fetch(PDO::FETCH_ASSOC);
+    $current_profile_image = $current_item ? $current_item['profile_image'] : null;
+
     $name = $_POST['name'];
     $position = $_POST['position'];
     $bio = $_POST['bio'];
-    $profile_image = $_POST['profile_image'];
     $email = $_POST['email'];
     $phone = $_POST['phone'];
+    $profile_image = handle_upload('profile_image', $current_profile_image);
     // Initialize social links with empty values if not set
     $social_links = [
         'linkedin' => $_POST['linkedin_url'] ?? '',
@@ -90,13 +140,14 @@ if (isset($_POST['update_team'])) {
     
     // Filter out empty values and encode to JSON
     $social_links = !empty(array_filter($social_links)) ? json_encode(array_filter($social_links)) : null;
-    $skills = $_POST['skills'] ? json_encode(explode(',', $_POST['skills'])) : null;
+    $skills = !empty($_POST['skills']) ? json_encode(array_map('trim', explode(',', $_POST['skills']))) : null;
+    $experience_years = !empty($_POST['experience_years']) ? intval($_POST['experience_years']) : null;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $sort_order = intval($_POST['sort_order']);
     
     try {
-        $stmt = $pdo->prepare("UPDATE team SET name = ?, position = ?, bio = ?, profile_image = ?, email = ?, phone = ?, social_links = ?, skills = ?, is_active = ?, sort_order = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$name, $position, $bio, $profile_image, $email, $phone, $social_links, $skills, $is_active, $sort_order, $team_id]);
+        $stmt = $pdo->prepare("UPDATE team SET name = ?, position = ?, bio = ?, profile_image = ?, email = ?, phone = ?, social_links = ?, skills = ?, experience_years = ?, is_active = ?, sort_order = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$name, $position, $bio, $profile_image, $email, $phone, $social_links, $skills, $experience_years, $is_active, $sort_order, $team_id]);
         $message = "Team member updated successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -270,6 +321,173 @@ require_once 'includes/header.php';
                                                     </div>
                                                 </td>
                                             </tr>
+
+                                            <!-- View Team Member Modal -->
+                                            <div class="modal fade" id="viewTeamModal<?php echo $member['id']; ?>" tabindex="-1" role="dialog" aria-labelledby="viewTeamModalLabel<?php echo $member['id']; ?>" aria-hidden="true">
+                                                <div class="modal-dialog modal-lg" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header bg-info text-white">
+                                                            <h5 class="modal-title" id="viewTeamModalLabel<?php echo $member['id']; ?>">View Team Member Details</h5>
+                                                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="row">
+                                                                <div class="col-md-4 text-center">
+                                                                    <?php if (!empty($member['profile_image'])): ?>
+                                                                        <img src="<?php echo htmlspecialchars($member['profile_image']); ?>" alt="<?php echo htmlspecialchars($member['name']); ?>" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                                                                    <?php else: ?>
+                                                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
+                                                                            <i class="fas fa-user fa-3x"></i>
+                                                                        </div>
+                                                                    <?php endif; ?>
+                                                                    <h4 class="font-weight-bold"><?php echo htmlspecialchars($member['name']); ?></h4>
+                                                                    <p class="text-muted"><?php echo htmlspecialchars($member['position']); ?></p>
+                                                                </div>
+                                                                <div class="col-md-8">
+                                                                    <?php if (!empty($member['bio'])): ?>
+                                                                        <h6>Bio</h6>
+                                                                        <p><?php echo nl2br(htmlspecialchars($member['bio'])); ?></p>
+                                                                    <?php endif; ?>
+                                                                    
+                                                                    <h6>Contact Information</h6>
+                                                                    <p class="mb-1"><i class="fas fa-envelope fa-fw mr-2"></i><?php echo htmlspecialchars($member['email'] ?? 'N/A'); ?></p>
+                                                                    <p><i class="fas fa-phone fa-fw mr-2"></i><?php echo htmlspecialchars($member['phone'] ?? 'N/A'); ?></p>
+
+                                                                    <?php 
+                                                                        $skills = !empty($member['skills']) ? json_decode($member['skills'], true) : [];
+                                                                        if (!empty($skills)):
+                                                                    ?>
+                                                                        <h6 class="mt-3">Skills</h6>
+                                                                        <div>
+                                                                            <?php foreach ($skills as $skill): ?>
+                                                                                <span class="badge badge-primary mr-1"><?php echo htmlspecialchars($skill); ?></span>
+                                                                            <?php endforeach; ?>
+                                                                        </div>
+                                                                    <?php endif; ?>
+
+                                                                    <?php 
+                                                                        $social_links = !empty($member['social_links']) ? json_decode($member['social_links'], true) : [];
+                                                                        if (!empty(array_filter($social_links))):
+                                                                    ?>
+                                                                        <h6 class="mt-3">Social Media</h6>
+                                                                        <p>
+                                                                            <?php if (!empty($social_links['linkedin'])): ?>
+                                                                                <a href="<?php echo htmlspecialchars($social_links['linkedin']); ?>" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fab fa-linkedin"></i> LinkedIn</a>
+                                                                            <?php endif; ?>
+                                                                            <?php if (!empty($social_links['github'])): ?>
+                                                                                <a href="<?php echo htmlspecialchars($social_links['github']); ?>" target="_blank" class="btn btn-outline-dark btn-sm"><i class="fab fa-github"></i> GitHub</a>
+                                                                            <?php endif; ?>
+                                                                            <?php if (!empty($social_links['twitter'])): ?>
+                                                                                <a href="<?php echo htmlspecialchars($social_links['twitter']); ?>" target="_blank" class="btn btn-outline-info btn-sm"><i class="fab fa-twitter"></i> Twitter</a>
+                                                                            <?php endif; ?>
+                                                                        </p>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Edit Team Member Modal -->
+                                            <div class="modal fade" id="editTeamModal<?php echo $member['id']; ?>" tabindex="-1" role="dialog" aria-labelledby="editTeamModalLabel<?php echo $member['id']; ?>" aria-hidden="true">
+                                                <div class="modal-dialog modal-lg" role="document">
+                                                    <div class="modal-content">
+                                                        <form method="POST" action="manage_team.php" enctype="multipart/form-data">
+                                                            <input type="hidden" name="team_id" value="<?php echo $member['id']; ?>">
+                                                            <div class="modal-header bg-warning text-white">
+                                                                <h5 class="modal-title" id="editTeamModalLabel<?php echo $member['id']; ?>">Edit Team Member</h5>
+                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                </button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <?php 
+                                                                    $social_links = !empty($member['social_links']) ? json_decode($member['social_links'], true) : ['linkedin' => '', 'github' => '', 'twitter' => ''];
+                                                                    $skills = !empty($member['skills']) ? json_decode($member['skills'], true) : [];
+                                                                ?>
+                                                                <div class="form-row">
+                                                                    <div class="form-group col-md-6">
+                                                                        <label for="name_<?php echo $member['id']; ?>">Full Name *</label>
+                                                                        <input type="text" class="form-control" id="name_<?php echo $member['id']; ?>" name="name" value="<?php echo htmlspecialchars($member['name']); ?>" required>
+                                                                    </div>
+                                                                    <div class="form-group col-md-6">
+                                                                        <label for="position_<?php echo $member['id']; ?>">Position *</label>
+                                                                        <input type="text" class="form-control" id="position_<?php echo $member['id']; ?>" name="position" value="<?php echo htmlspecialchars($member['position']); ?>" required>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label for="bio_<?php echo $member['id']; ?>">Bio</label>
+                                                                    <textarea class="form-control summernote-edit" id="bio_<?php echo $member['id']; ?>" name="bio" rows="4"><?php echo htmlspecialchars($member['bio'] ?? ''); ?></textarea>
+                                                                </div>
+                                                                <div class="form-row">
+                                                                    <div class="form-group col-md-6">
+                                                                        <label for="email_<?php echo $member['id']; ?>">Email</label>
+                                                                        <input type="email" class="form-control" id="email_<?php echo $member['id']; ?>" name="email" value="<?php echo htmlspecialchars($member['email'] ?? ''); ?>">
+                                                                    </div>
+                                                                    <div class="form-group col-md-6">
+                                                                        <label for="phone_<?php echo $member['id']; ?>">Phone</label>
+                                                                        <input type="tel" class="form-control" id="phone_<?php echo $member['id']; ?>" name="phone" value="<?php echo htmlspecialchars($member['phone'] ?? ''); ?>">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <label for="profile_image_<?php echo $member['id']; ?>">Update Profile Image (optional)</label>
+                                                                    <input type="file" class="form-control-file" id="profile_image_<?php echo $member['id']; ?>" name="profile_image" accept="image/*">
+                                                                    <input type="hidden" name="current_image" value="<?php echo htmlspecialchars($member['profile_image']); ?>">
+                                                                    <?php if (!empty($member['profile_image'])): ?>
+                                                                        <div class="mt-2">
+                                                                            <img src="<?php echo htmlspecialchars($member['profile_image']); ?>" alt="Current Profile Image" class="img-thumbnail" width="100">
+                                                                        </div>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                                <div class="form-row">
+                                                                    <div class="form-group col-md-4">
+                                                                        <label for="linkedin_url_<?php echo $member['id']; ?>">LinkedIn URL</label>
+                                                                        <input type="url" class="form-control" id="linkedin_url_<?php echo $member['id']; ?>" name="linkedin_url" value="<?php echo htmlspecialchars($social_links['linkedin'] ?? ''); ?>">
+                                                                    </div>
+                                                                    <div class="form-group col-md-4">
+                                                                        <label for="github_url_<?php echo $member['id']; ?>">GitHub URL</label>
+                                                                        <input type="url" class="form-control" id="github_url_<?php echo $member['id']; ?>" name="github_url" value="<?php echo htmlspecialchars($social_links['github'] ?? ''); ?>">
+                                                                    </div>
+                                                                    <div class="form-group col-md-4">
+                                                                        <label for="twitter_url_<?php echo $member['id']; ?>">Twitter URL</label>
+                                                                        <input type="url" class="form-control" id="twitter_url_<?php echo $member['id']; ?>" name="twitter_url" value="<?php echo htmlspecialchars($social_links['twitter'] ?? ''); ?>">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-row">
+                                                                    <div class="form-group col-md-6">
+                                                                        <label for="skills_<?php echo $member['id']; ?>">Skills (comma separated)</label>
+                                                                        <input type="text" class="form-control" id="skills_<?php echo $member['id']; ?>" name="skills" value="<?php echo htmlspecialchars(is_array($skills) ? implode(', ', $skills) : ''); ?>" placeholder="e.g., PHP, JavaScript, UI/UX">
+                                                                    </div>
+                                                                    <div class="form-group col-md-3">
+                                                                        <label for="experience_years_<?php echo $member['id']; ?>">Years of Experience</label>
+                                                                        <input type="number" class="form-control" id="experience_years_<?php echo $member['id']; ?>" name="experience_years" value="<?php echo htmlspecialchars($member['experience_years'] ?? ''); ?>" min="0">
+                                                                    </div>
+                                                                    <div class="form-group col-md-3">
+                                                                        <label for="sort_order_<?php echo $member['id']; ?>">Sort Order</label>
+                                                                        <input type="number" class="form-control" id="sort_order_<?php echo $member['id']; ?>" name="sort_order" value="<?php echo htmlspecialchars($member['sort_order'] ?? '0'); ?>" min="0">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <div class="custom-control custom-switch">
+                                                                        <input type="checkbox" class="custom-control-input" id="is_active_edit_<?php echo $member['id']; ?>" name="is_active" value="1" <?php echo ($member['is_active'] ?? 0) ? 'checked' : ''; ?>>
+                                                                        <label class="custom-control-label" for="is_active_edit_<?php echo $member['id']; ?>">Active</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                                <button type="submit" name="update_team" class="btn btn-warning">Update Team Member</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         <?php endforeach; ?>
                                     </tbody>
                                 </table>
@@ -363,13 +581,8 @@ require_once 'includes/header.php';
                         </div>
                         
                         <div class="form-group">
-                            <label for="profile_image">Profile Image URL *</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="profile_image" name="profile_image" required>
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary" type="button" id="uploadProfileImage">Upload</button>
-                                </div>
-                            </div>
+                            <label for="profile_image">Profile Image</label>
+                            <input type="file" class="form-control-file" id="profile_image" name="profile_image" accept="image/*">
                         </div>
                         
                         <div class="form-row">
@@ -620,9 +833,16 @@ require_once 'includes/header.php';
                                 <label>Full Name *</label>
                                 <input type="text" class="form-control" name="name" value="<?php echo htmlspecialchars($member['name']); ?>" required>
                             </div>
-                            <div class="form-group col-md-6">
-                                <label>Position *</label>
-                                <input type="text" class="form-control" name="position" value="<?php echo htmlspecialchars($member['position']); ?>" required>
+                            <div class="form-group">
+                                <label>New Profile Image (optional)</label>
+                                <input type="file" class="form-control-file" name="profile_image" accept="image/*">
+                                <?php if (!empty($member['profile_image'])): ?>
+                                    <div class="mt-2">
+                                        <small>Current Image:</small><br>
+                                        <img src="<?php echo htmlspecialchars($member['profile_image']); ?>" alt="Current Profile Image" style="max-width: 100px; max-height: 100px; border-radius: 50%;">
+                                        <a href="<?php echo htmlspecialchars($member['profile_image']); ?>" target="_blank" class="ml-2">View</a>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         
@@ -642,17 +862,6 @@ require_once 'includes/header.php';
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label>Profile Image URL *</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="profile_image" value="<?php echo htmlspecialchars($member['profile_image']); ?>" required>
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('profile_image_upload').click()">
-                                        <i class="fas fa-upload"></i> Upload
-                                    </button>
-                                    <input type="file" id="profile_image_upload" style="display: none;" accept="image/*">
-                                </div>
-                            </div>
                         </div>
                         
                         <div class="form-row">

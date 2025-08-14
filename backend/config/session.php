@@ -37,4 +37,11 @@ if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > 
 }
 
 $_SESSION['LAST_ACTIVITY'] = time();
+
+// Prevent caching of authenticated pages so back button won't expose content after logout
+if (!headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Cache-Control: post-check=0, pre-check=0', false);
+    header('Pragma: no-cache');
+}
 ?>

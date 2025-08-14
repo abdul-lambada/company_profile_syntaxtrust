@@ -2,6 +2,76 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
+// Define upload directory
+define('UPLOAD_DIR', 'uploads/portofolio/');
+
+// Function to handle file uploads
+function handle_upload($file_input_name, $current_image_path = null) {
+    if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
+        // Create upload directory if it doesn't exist
+        if (!is_dir(UPLOAD_DIR)) {
+            mkdir(UPLOAD_DIR, 0777, true);
+        }
+
+        $file_tmp_path = $_FILES[$file_input_name]['tmp_name'];
+        $file_name = $_FILES[$file_input_name]['name'];
+        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+        $new_file_name = uniqid() . '_' . time() . '.' . $file_extension;
+        $dest_path = UPLOAD_DIR . $new_file_name;
+
+        if (move_uploaded_file($file_tmp_path, $dest_path)) {
+            // If it's an update and there was an old image, delete it
+            if ($current_image_path && file_exists($current_image_path)) {
+                unlink($current_image_path);
+            }
+            return $dest_path;
+        }
+    }
+    // Return the old path if no new file is uploaded during an update
+    return $current_image_path;
+}
+
+// Function to handle multiple file uploads for gallery
+function handle_gallery_upload($file_input_name, $current_images_json = '[]') {
+    $uploaded_paths = [];
+    if (isset($_FILES[$file_input_name]) && is_array($_FILES[$file_input_name]['name'])) {
+        $file_count = count($_FILES[$file_input_name]['name']);
+        for ($i = 0; $i < $file_count; $i++) {
+            if ($_FILES[$file_input_name]['error'][$i] === UPLOAD_ERR_OK) {
+                if (!is_dir(UPLOAD_DIR)) {
+                    mkdir(UPLOAD_DIR, 0777, true);
+                }
+                $file_tmp_path = $_FILES[$file_input_name]['tmp_name'][$i];
+                $file_name = $_FILES[$file_input_name]['name'][$i];
+                $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+                $new_file_name = uniqid() . '_gallery_' . time() . '.' . $file_extension;
+                $dest_path = UPLOAD_DIR . $new_file_name;
+
+                if (move_uploaded_file($file_tmp_path, $dest_path)) {
+                    $uploaded_paths[] = $dest_path;
+                }
+            }
+        }
+    }
+
+    $current_images = json_decode($current_images_json, true) ?: [];
+    $new_images = array_merge($current_images, $uploaded_paths);
+
+    // Handle image deletion from gallery
+    if (isset($_POST['delete_images']) && is_array($_POST['delete_images'])) {
+        foreach ($_POST['delete_images'] as $image_to_delete) {
+            if (($key = array_search($image_to_delete, $new_images)) !== false) {
+                if (file_exists($image_to_delete)) {
+                    unlink($image_to_delete);
+                }
+                unset($new_images[$key]);
+            }
+        }
+    }
+
+    return json_encode(array_values($new_images)); // Re-index array
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -64,14 +134,15 @@ if (isset($_POST['create_portfolio'])) {
     $technologies = $_POST['technologies'] ? json_encode(explode(',', $_POST['technologies'])) : null;
     $project_url = $_POST['project_url'];
     $github_url = $_POST['github_url'];
-    $image_main = $_POST['image_main'];
-    $images = $_POST['images'] ? json_encode(explode(',', $_POST['images'])) : null;
     $start_date = $_POST['start_date'] ?: null;
     $end_date = $_POST['end_date'] ?: null;
     $status = $_POST['status'];
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
-    
+
+    $image_main = handle_upload('image_main');
+    $images = handle_gallery_upload('images');
+
     try {
         $stmt = $pdo->prepare("INSERT INTO portfolio (title, description, short_description, client_name, category, technologies, project_url, github_url, image_main, images, start_date, end_date, status, is_featured, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$title, $description, $short_description, $client_name, $category, $technologies, $project_url, $github_url, $image_main, $images, $start_date, $end_date, $status, $is_featured, $is_active]);
@@ -86,6 +157,13 @@ if (isset($_POST['create_portfolio'])) {
 // Update portfolio item
 if (isset($_POST['update_portfolio'])) {
     $portfolio_id = $_POST['portfolio_id'];
+
+    $stmt = $pdo->prepare("SELECT image_main, images FROM portfolio WHERE id = ?");
+    $stmt->execute([$portfolio_id]);
+    $current_item = $stmt->fetch(PDO::FETCH_ASSOC);
+    $current_main_image = $current_item['image_main'] ?? null;
+    $current_gallery_images = $current_item['images'] ?? '[]';
+
     $title = $_POST['title'];
     $description = $_POST['description'];
     $short_description = $_POST['short_description'];
@@ -94,14 +172,15 @@ if (isset($_POST['update_portfolio'])) {
     $technologies = $_POST['technologies'] ? json_encode(explode(',', $_POST['technologies'])) : null;
     $project_url = $_POST['project_url'];
     $github_url = $_POST['github_url'];
-    $image_main = $_POST['image_main'];
-    $images = $_POST['images'] ? json_encode(explode(',', $_POST['images'])) : null;
     $start_date = $_POST['start_date'] ?: null;
     $end_date = $_POST['end_date'] ?: null;
     $status = $_POST['status'];
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
-    
+
+    $image_main = handle_upload('image_main', $current_main_image);
+    $images = handle_gallery_upload('images', $current_gallery_images);
+
     try {
         $stmt = $pdo->prepare("UPDATE portfolio SET title = ?, description = ?, short_description = ?, client_name = ?, category = ?, technologies = ?, project_url = ?, github_url = ?, image_main = ?, images = ?, start_date = ?, end_date = ?, status = ?, is_featured = ?, is_active = ?, updated_at = NOW() WHERE id = ?");
         $stmt->execute([$title, $description, $short_description, $client_name, $category, $technologies, $project_url, $github_url, $image_main, $images, $start_date, $end_date, $status, $is_featured, $is_active, $portfolio_id]);
@@ -341,17 +420,17 @@ require_once 'includes/header.php';
         <i class="fas fa-angle-up"></i>
     </a>
 
-    <!-- Add Portfolio Modal -->
+    <!-- Add New Portfolio Modal -->
     <div class="modal fade" id="addPortfolioModal" tabindex="-1" role="dialog" aria-labelledby="addPortfolioModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="addPortfolioModalLabel">Add New Portfolio Item</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" action="manage_portfolio.php" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addPortfolioModalLabel">Add New Portfolio Item</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
                     <div class="modal-body">
                         <div class="form-row">
                             <div class="form-group col-md-6">
@@ -410,17 +489,12 @@ require_once 'includes/header.php';
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="image_main">Main Image URL *</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="image_main" name="image_main" required>
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary" type="button" id="uploadMainImage">Upload</button>
-                                </div>
-                            </div>
+                            <label for="image_main">Main Image</label>
+                            <input type="file" class="form-control-file" id="image_main" name="image_main" accept="image/*">
                         </div>
                         <div class="form-group">
-                            <label>Additional Images (comma separated URLs)</label>
-                            <textarea class="form-control" id="images" name="images" rows="2" placeholder="Enter image URLs separated by commas"></textarea>
+                            <label for="images">Gallery Images (can select multiple)</label>
+                            <input type="file" class="form-control-file" id="images" name="images[]" accept="image/*" multiple>
                         </div>
                         <div class="form-row">
                             <div class="form-group col-md-6">
@@ -506,7 +580,7 @@ require_once 'includes/header.php';
                                 <div class="row">
                                     <?php foreach ($images as $img): ?>
                                         <div class="col-6 col-md-4 mb-3">
-                                            <img src="<?php echo htmlspecialchars(trim($img)); ?>" class="img-thumbnail" style="height: 100px; width: 100%; object-fit: cover;" alt="Project Image">
+                                            <img src="<?php echo htmlspecialchars($img); ?>" class="img-thumbnail" style="height: 100px; width: 100%; object-fit: cover;" alt="Project Image">
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -525,14 +599,14 @@ require_once 'includes/header.php';
     <div class="modal fade" id="editPortfolioModal<?php echo $item['id']; ?>" tabindex="-1" role="dialog" aria-labelledby="editPortfolioModalLabel<?php echo $item['id']; ?>" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title" id="editPortfolioModalLabel<?php echo $item['id']; ?>">Edit Portfolio: <?php echo htmlspecialchars($item['title']); ?></h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" action="manage_portfolio.php" enctype="multipart/form-data">
                     <input type="hidden" name="portfolio_id" value="<?php echo $item['id']; ?>">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editPortfolioModalLabel<?php echo $item['id']; ?>">Edit Portfolio Item: <?php echo htmlspecialchars($item['title']); ?></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
                     <div class="modal-body">
                         <div class="form-row">
                             <div class="form-group col-md-6">
@@ -541,12 +615,12 @@ require_once 'includes/header.php';
                             </div>
                             <div class="form-group col-md-6">
                                 <label for="edit_client_name_<?php echo $item['id']; ?>">Client Name</label>
-                                <input type="text" class="form-control" id="edit_client_name_<?php echo $item['id']; ?>" name="client_name" value="<?php echo htmlspecialchars($item['client_name'] ?? ''); ?>">
+                                <input type="text" class="form-control" id="edit_client_name_<?php echo $item['id']; ?>" name="client_name" value="<?php echo htmlspecialchars($item['client_name']); ?>">
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="edit_short_description_<?php echo $item['id']; ?>">Short Description</label>
-                            <input type="text" class="form-control" id="edit_short_description_<?php echo $item['id']; ?>" name="short_description" value="<?php echo htmlspecialchars($item['short_description'] ?? ''); ?>">
+                            <input type="text" class="form-control" id="edit_short_description_<?php echo $item['id']; ?>" name="short_description" value="<?php echo htmlspecialchars($item['short_description']); ?>" maxlength="255">
                         </div>
                         <div class="form-group">
                             <label for="edit_description_<?php echo $item['id']; ?>">Description *</label>
@@ -560,65 +634,68 @@ require_once 'includes/header.php';
                             <div class="form-group col-md-6">
                                 <label for="edit_status_<?php echo $item['id']; ?>">Status *</label>
                                 <select class="form-control" id="edit_status_<?php echo $item['id']; ?>" name="status" required>
-                                    <option value="completed" <?php echo $item['status'] === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                                    <option value="ongoing" <?php echo $item['status'] === 'ongoing' ? 'selected' : ''; ?>>Ongoing</option>
-                                    <option value="upcoming" <?php echo $item['status'] === 'upcoming' ? 'selected' : ''; ?>>Upcoming</option>
+                                    <option value="completed" <?php echo $item['status'] == 'completed' ? 'selected' : ''; ?>>Completed</option>
+                                    <option value="ongoing" <?php echo $item['status'] == 'ongoing' ? 'selected' : ''; ?>>Ongoing</option>
+                                    <option value="upcoming" <?php echo $item['status'] == 'upcoming' ? 'selected' : ''; ?>>Upcoming</option>
                                 </select>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group col-md-6">
                                 <label for="edit_start_date_<?php echo $item['id']; ?>">Start Date</label>
-                                <input type="date" class="form-control" id="edit_start_date_<?php echo $item['id']; ?>" name="start_date" value="<?php echo $item['start_date'] ?? ''; ?>">
+                                <input type="date" class="form-control" id="edit_start_date_<?php echo $item['id']; ?>" name="start_date" value="<?php echo htmlspecialchars($item['start_date']); ?>">
                             </div>
                             <div class="form-group col-md-6">
                                 <label for="edit_end_date_<?php echo $item['id']; ?>">End Date</label>
-                                <input type="date" class="form-control" id="edit_end_date_<?php echo $item['id']; ?>" name="end_date" value="<?php echo $item['end_date'] ?? ''; ?>">
+                                <input type="date" class="form-control" id="edit_end_date_<?php echo $item['id']; ?>" name="end_date" value="<?php echo htmlspecialchars($item['end_date']); ?>">
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="edit_technologies_<?php echo $item['id']; ?>">Technologies (comma separated)</label>
-                            <input type="text" class="form-control" id="edit_technologies_<?php echo $item['id']; ?>" name="technologies" value="<?php echo htmlspecialchars($technologies_str); ?>">
+                            <input type="text" class="form-control" id="edit_technologies_<?php echo $item['id']; ?>" name="technologies" value="<?php echo htmlspecialchars(implode(',', json_decode($item['technologies'] ?? '[]', true))); ?>" placeholder="e.g., HTML, CSS, JavaScript, PHP">
                         </div>
                         <div class="form-row">
                             <div class="form-group col-md-6">
                                 <label for="edit_project_url_<?php echo $item['id']; ?>">Project URL</label>
-                                <input type="url" class="form-control" id="edit_project_url_<?php echo $item['id']; ?>" name="project_url" value="<?php echo htmlspecialchars($item['project_url'] ?? ''); ?>">
+                                <input type="url" class="form-control" id="edit_project_url_<?php echo $item['id']; ?>" name="project_url" value="<?php echo htmlspecialchars($item['project_url']); ?>">
                             </div>
                             <div class="form-group col-md-6">
                                 <label for="edit_github_url_<?php echo $item['id']; ?>">GitHub URL</label>
-                                <input type="url" class="form-control" id="edit_github_url_<?php echo $item['id']; ?>" name="github_url" value="<?php echo htmlspecialchars($item['github_url'] ?? ''); ?>">
+                                <input type="url" class="form-control" id="edit_github_url_<?php echo $item['id']; ?>" name="github_url" value="<?php echo htmlspecialchars($item['github_url']); ?>">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="edit_image_main_<?php echo $item['id']; ?>">Main Image URL *</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="edit_image_main_<?php echo $item['id']; ?>" name="image_main" value="<?php echo htmlspecialchars($item['image_main']); ?>" required>
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('edit_image_main_<?php echo $item['id']; ?>').value = ''">Clear</button>
-                                </div>
-                            </div>
-                            <?php if (!empty($item['image_main'])): ?>
-                                <div class="mt-2">
-                                    <img src="<?php echo htmlspecialchars($item['image_main']); ?>" class="img-thumbnail" style="max-height: 100px;" alt="Current Image">
-                                </div>
+                            <label for="edit_image_main_<?php echo $item['id']; ?>">New Main Image (optional)</label>
+                            <input type="file" class="form-control-file" id="edit_image_main_<?php echo $item['id']; ?>" name="image_main" accept="image/*">
+                            <?php if ($item['image_main']): ?>
+                                <small class="form-text text-muted">Current: <a href="<?php echo htmlspecialchars($item['image_main']); ?>" target="_blank">View Main Image</a></small>
                             <?php endif; ?>
                         </div>
                         <div class="form-group">
-                            <label for="edit_images_<?php echo $item['id']; ?>">Additional Images (one URL per line)</label>
-                            <textarea class="form-control" id="edit_images_<?php echo $item['id']; ?>" name="images" rows="3" placeholder="Enter one image URL per line"><?php echo htmlspecialchars(implode("\n", $images)); ?></textarea>
-                            <?php if (!empty($images)): ?>
-                                <div class="mt-2">
-                                    <p class="small mb-1">Current Images:</p>
-                                    <div class="d-flex flex-wrap">
-                                        <?php foreach ($images as $img): ?>
-                                            <div class="mr-2 mb-2">
-                                                <img src="<?php echo htmlspecialchars(trim($img)); ?>" class="img-thumbnail" style="height: 50px; width: 50px; object-fit: cover;" alt="Project Image">
+                            <label for="edit_images_<?php echo $item['id']; ?>">Add/Remove Gallery Images</label>
+                            <input type="file" class="form-control-file" id="edit_images_<?php echo $item['id']; ?>" name="images[]" accept="image/*" multiple>
+                            <div class="mt-2">
+                                <small>Current Gallery Images (check to delete)</small>
+                                <div class="row">
+                                    <?php 
+                                    $gallery_images = json_decode($item['images'] ?? '[]', true);
+                                    if (!empty($gallery_images)):
+                                        foreach ($gallery_images as $img):
+                                            if (empty($img)) continue; ?>
+                                            <div class="col-md-3 mt-2">
+                                                <div class="img-thumbnail position-relative">
+                                                    <img src="<?php echo htmlspecialchars($img); ?>" class="img-fluid">
+                                                    <div class="position-absolute top-0 right-0 p-1 bg-white" style="line-height: 1;">
+                                                        <input type="checkbox" name="delete_images[]" value="<?php echo htmlspecialchars($img); ?>" title="Mark to delete">
+                                                    </div>
+                                                </div>
                                             </div>
-                                        <?php endforeach; ?>
-                                    </div>
+                                    <?php endforeach; 
+                                    else: ?>
+                                        <p class="col-12 text-muted">No gallery images.</p>
+                                    <?php endif; ?>
                                 </div>
-                            <?php endif; ?>
+                            </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group col-md-6">
@@ -637,7 +714,7 @@ require_once 'includes/header.php';
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" name="update_portfolio" class="btn btn-warning">Update Portfolio</button>
+                        <button type="submit" name="update_portfolio" class="btn btn-primary">Save Changes</button>
                     </div>
                 </form>
             </div>

@@ -1,4 +1,41 @@
-<!-- Sidebar -->
+<?php
+// Get the current page filename
+$current_page = basename($_SERVER['PHP_SELF']);
+
+// Define menu structures
+$menu_groups = [
+    'content' => [
+        'title' => 'Content Management',
+        'icon' => 'fas fa-fw fa-edit',
+        'pages' => [
+            'manage_services.php' => 'Services',
+            'manage_pricing_plans.php' => 'Pricing Plans',
+            'manage_portfolio.php' => 'Portfolio',
+            'manage_blog_posts.php' => 'Blog Posts',
+            'manage_testimonials.php' => 'Testimonials',
+        ]
+    ],
+    'users' => [
+        'title' => 'User Management',
+        'icon' => 'fas fa-fw fa-users',
+        'pages' => [
+            'manage_team.php' => 'Team',
+            'manage_clients.php' => 'Clients',
+            'manage_users.php' => 'Users',
+        ]
+    ],
+    'site' => [
+        'title' => 'Site Management',
+        'icon' => 'fas fa-fw fa-desktop',
+        'pages' => [
+            'manage_orders.php' => 'Orders',
+            'manage_contact_inquiries.php' => 'Contact Inquiries',
+            'manage_settings.php' => 'Settings',
+        ]
+    ]
+];
+
+?><!-- Sidebar -->
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
     <!-- Sidebar - Brand -->
@@ -13,93 +50,39 @@
     <hr class="sidebar-divider my-0">
 
     <!-- Nav Item - Dashboard -->
-    <li class="nav-item active">
+    <li class="nav-item <?php echo ($current_page == 'index.php') ? 'active' : ''; ?>">
         <a class="nav-link" href="index.php">
             <i class="fas fa-fw fa-tachometer-alt"></i>
             <span>Dashboard</span></a>
     </li>
 
-    <!-- Heading -->
-    <div class="sidebar-heading">
-        Management
-    </div>
-
-    <!-- Nav Item - Services -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_services.php">
-            <i class="fas fa-fw fa-cogs"></i>
-            <span>Services</span></a>
-    </li>
-
-    <!-- Nav Item - Pricing Plans -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_pricing_plans.php">
-            <i class="fas fa-fw fa-tags"></i>
-            <span>Pricing Plans</span></a>
-    </li>
-
-    <!-- Nav Item - Portfolio -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_portfolio.php">
-            <i class="fas fa-fw fa-briefcase"></i>
-            <span>Portfolio</span></a>
-    </li>
-
-    <!-- Nav Item - Team -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_team.php">
-            <i class="fas fa-fw fa-users"></i>
-            <span>Team</span></a>
-    </li>
-
-    <!-- Nav Item - Clients -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_clients.php">
-            <i class="fas fa-fw fa-building"></i>
-            <span>Clients</span></a>
-    </li>
-
-    <!-- Nav Item - Settings -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_settings.php">
-            <i class="fas fa-fw fa-cog"></i>
-            <span>Settings</span></a>
-    </li>
-
-    <!-- Nav Item - Users -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_users.php">
-            <i class="fas fa-fw fa-user"></i>
-            <span>Users</span></a>
-    </li>
-
-    <!-- Nav Item - Orders -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_orders.php">
-            <i class="fas fa-fw fa-shopping-cart"></i>
-            <span>Orders</span></a>
-    </li>
-
-    <!-- Nav Item - Blog Posts -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_blog_posts.php">
-            <i class="fas fa-fw fa-blog"></i>
-            <span>Blog Posts</span></a>
-    </li>
-
-    <!-- Nav Item - Testimonials -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_testimonials.php">
-            <i class="fas fa-fw fa-quote-left"></i>
-            <span>Testimonials</span></a>
-    </li>
-
-    <!-- Nav Item - Contact Inquiries -->
-    <li class="nav-item">
-        <a class="nav-link" href="manage_contact_inquiries.php">
-            <i class="fas fa-fw fa-envelope"></i>
-            <span>Contact Inquiries</span></a>
-    </li>
+        <!-- Loop through menu groups -->
+    <?php foreach ($menu_groups as $group_key => $group): ?>
+        <?php 
+            // Determine if the current group should be active/expanded
+            $is_active_group = false;
+            foreach ($group['pages'] as $page_file => $page_name) {
+                if ($current_page == $page_file) {
+                    $is_active_group = true;
+                    break;
+                }
+            }
+        ?>
+        <!-- Nav Item - Collapsible Menu -->
+        <li class="nav-item <?php echo $is_active_group ? 'active' : ''; ?>">
+            <a class="nav-link <?php echo $is_active_group ? '' : 'collapsed'; ?>" href="#" data-toggle="collapse" data-target="#collapse-<?php echo $group_key; ?>" aria-expanded="<?php echo $is_active_group ? 'true' : 'false'; ?>" aria-controls="collapse-<?php echo $group_key; ?>">
+                <i class="<?php echo $group['icon']; ?>"></i>
+                <span><?php echo $group['title']; ?></span>
+            </a>
+            <div id="collapse-<?php echo $group_key; ?>" class="collapse <?php echo $is_active_group ? 'show' : ''; ?>" aria-labelledby="heading-<?php echo $group_key; ?>" data-parent="#accordionSidebar">
+                <div class="bg-white py-2 collapse-inner rounded">
+                    <?php foreach ($group['pages'] as $page_file => $page_name): ?>
+                        <a class="collapse-item <?php echo ($current_page == $page_file) ? 'active' : ''; ?>" href="<?php echo $page_file; ?>"><?php echo $page_name; ?></a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </li>
+    <?php endforeach; ?>
 
     <!-- Divider -->
     <hr class="sidebar-divider d-none d-md-block">

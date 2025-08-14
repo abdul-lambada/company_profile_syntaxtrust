@@ -59,21 +59,33 @@ if (isset($_POST['update_payment']) && isset($_POST['order_id']) && isset($_POST
 // Create new order
 if (isset($_POST['create_order'])) {
     $order_number = 'ORD-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
-    $user_id = $_POST['user_id'] ?: null;
+    $user_id = isset($_POST['user_id']) && $_POST['user_id'] !== '' ? $_POST['user_id'] : null;
     $customer_name = $_POST['customer_name'];
     $customer_email = $_POST['customer_email'];
     $customer_phone = $_POST['customer_phone'];
-    $service_type = $_POST['service_type'];
+    $service_id = isset($_POST['service_id']) && $_POST['service_id'] !== '' ? (int)$_POST['service_id'] : null;
+    $pricing_plan_id = isset($_POST['pricing_plan_id']) && $_POST['pricing_plan_id'] !== '' ? (int)$_POST['pricing_plan_id'] : null;
     $project_description = $_POST['project_description'];
     $total_amount = floatval($_POST['total_amount']);
     $status = $_POST['status'];
     $payment_status = $_POST['payment_status'];
-    $deadline = $_POST['deadline'] ?: null;
-    $requirements = $_POST['requirements'];
+    // Ensure requirements is valid JSON for DB column (JSON type or CHECK JSON_VALID)
+    $requirements_input = isset($_POST['requirements']) ? trim($_POST['requirements']) : '';
+    if ($requirements_input === '') {
+        $requirements = '[]';
+    } else {
+        $firstChar = substr($requirements_input, 0, 1);
+        // If it looks like JSON object/array, pass through; otherwise wrap as JSON string
+        if ($firstChar === '{' || $firstChar === '[') {
+            $requirements = $requirements_input;
+        } else {
+            $requirements = json_encode($requirements_input, JSON_UNESCAPED_UNICODE);
+        }
+    }
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO orders (order_number, user_id, customer_name, customer_email, customer_phone, service_type, project_description, total_amount, status, payment_status, deadline, requirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$order_number, $user_id, $customer_name, $customer_email, $customer_phone, $service_type, $project_description, $total_amount, $status, $payment_status, $deadline, $requirements]);
+        $stmt = $pdo->prepare("INSERT INTO orders (order_number, user_id, service_id, pricing_plan_id, customer_name, customer_email, customer_phone, project_description, total_amount, status, payment_status, requirements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$order_number, $user_id, $service_id, $pricing_plan_id, $customer_name, $customer_email, $customer_phone, $project_description, $total_amount, $status, $payment_status, $requirements]);
         $message = "Order created successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -85,22 +97,33 @@ if (isset($_POST['create_order'])) {
 // Update order
 if (isset($_POST['update_order'])) {
     $order_id = $_POST['order_id'];
-    $user_id = $_POST['user_id'] ?: null;
+    $user_id = isset($_POST['user_id']) && $_POST['user_id'] !== '' ? $_POST['user_id'] : null;
     $customer_name = $_POST['customer_name'];
     $customer_email = $_POST['customer_email'];
     $customer_phone = $_POST['customer_phone'];
-    $service_type = $_POST['service_type'];
+    $service_id = isset($_POST['service_id']) && $_POST['service_id'] !== '' ? (int)$_POST['service_id'] : null;
+    $pricing_plan_id = isset($_POST['pricing_plan_id']) && $_POST['pricing_plan_id'] !== '' ? (int)$_POST['pricing_plan_id'] : null;
     $project_description = $_POST['project_description'];
     $total_amount = floatval($_POST['total_amount']);
     $status = $_POST['status'];
     $payment_status = $_POST['payment_status'];
-    $deadline = $_POST['deadline'] ?: null;
-    $requirements = $_POST['requirements'];
+    // Ensure requirements is valid JSON
+    $requirements_input = isset($_POST['requirements']) ? trim($_POST['requirements']) : '';
+    if ($requirements_input === '') {
+        $requirements = '[]';
+    } else {
+        $firstChar = substr($requirements_input, 0, 1);
+        if ($firstChar === '{' || $firstChar === '[') {
+            $requirements = $requirements_input;
+        } else {
+            $requirements = json_encode($requirements_input, JSON_UNESCAPED_UNICODE);
+        }
+    }
     $admin_notes = $_POST['admin_notes'];
     
     try {
-        $stmt = $pdo->prepare("UPDATE orders SET user_id = ?, customer_name = ?, customer_email = ?, customer_phone = ?, service_type = ?, project_description = ?, total_amount = ?, status = ?, payment_status = ?, deadline = ?, requirements = ?, admin_notes = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$user_id, $customer_name, $customer_email, $customer_phone, $service_type, $project_description, $total_amount, $status, $payment_status, $deadline, $requirements, $admin_notes, $order_id]);
+        $stmt = $pdo->prepare("UPDATE orders SET user_id = ?, service_id = ?, pricing_plan_id = ?, customer_name = ?, customer_email = ?, customer_phone = ?, project_description = ?, total_amount = ?, status = ?, payment_status = ?, requirements = ?, admin_notes = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$user_id, $service_id, $pricing_plan_id, $customer_name, $customer_email, $customer_phone, $project_description, $total_amount, $status, $payment_status, $requirements, $admin_notes, $order_id]);
         $message = "Order updated successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -158,6 +181,15 @@ $sql = "SELECT o.*, s.name as service_name, p.name as plan_name, u.full_name as 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch services for selects
+try {
+    $services_stmt = $pdo->prepare("SELECT id, name FROM services ORDER BY name ASC");
+    $services_stmt->execute();
+    $services = $services_stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $services = [];
+}
 
 // Include header
 require_once 'includes/header.php';
@@ -445,13 +477,12 @@ require_once 'includes/header.php';
                                     <input type="tel" class="form-control" id="customer_phone" name="customer_phone">
                                 </div>
                                 <div class="form-group">
-                                    <label for="service_type">Service Type *</label>
-                                    <select class="form-control" id="service_type" name="service_type" required>
+                                    <label for="service_id">Service *</label>
+                                    <select class="form-control" id="service_id" name="service_id" required>
                                         <option value="">Select Service</option>
-                                        <option value="website">Website Development</option>
-                                        <option value="mobile">Mobile App Development</option>
-                                        <option value="design">UI/UX Design</option>
-                                        <option value="marketing">Digital Marketing</option>
+                                        <?php foreach ($services as $svc): ?>
+                                            <option value="<?php echo (int)$svc['id']; ?>"><?php echo htmlspecialchars($svc['name']); ?></option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                             </div>
@@ -550,8 +581,8 @@ require_once 'includes/header.php';
                                     <td><?php echo htmlspecialchars($order['order_number']); ?></td>
                                 </tr>
                                 <tr>
-                                    <th>Service Type:</th>
-                                    <td><?php echo !empty($order['service_name']) ? htmlspecialchars($order['service_name']) : htmlspecialchars($order['service_type']); ?></td>
+                                    <th>Service:</th>
+                                    <td><?php echo !empty($order['service_name']) ? htmlspecialchars($order['service_name']) : '-'; ?></td>
                                 </tr>
                                 <?php if (!empty($order['plan_name'])): ?>
                                 <tr>
@@ -742,13 +773,14 @@ require_once 'includes/header.php';
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label for="edit_service_type_<?php echo $order['id']; ?>">Service Type *</label>
-                                            <select class="form-control" id="edit_service_type_<?php echo $order['id']; ?>" name="service_type" required>
-                                                <option value="website" <?php echo $order['service_type'] === 'website' ? 'selected' : ''; ?>>Website Development</option>
-                                                <option value="mobile" <?php echo $order['service_type'] === 'mobile' ? 'selected' : ''; ?>>Mobile App Development</option>
-                                                <option value="design" <?php echo $order['service_type'] === 'design' ? 'selected' : ''; ?>>UI/UX Design</option>
-                                                <option value="marketing" <?php echo $order['service_type'] === 'marketing' ? 'selected' : ''; ?>>Digital Marketing</option>
-                                                <option value="other" <?php echo !in_array($order['service_type'], ['website', 'mobile', 'design', 'marketing']) ? 'selected' : ''; ?>>Other</option>
+                                            <label for="edit_service_id_<?php echo $order['id']; ?>">Service *</label>
+                                            <select class="form-control" id="edit_service_id_<?php echo $order['id']; ?>" name="service_id" required>
+                                                <option value="">Select Service</option>
+                                                <?php foreach ($services as $svc): ?>
+                                                    <option value="<?php echo (int)$svc['id']; ?>" <?php echo (int)$order['service_id'] === (int)$svc['id'] ? 'selected' : ''; ?>>
+                                                        <?php echo htmlspecialchars($svc['name']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                         <div class="form-group">

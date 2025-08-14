@@ -2,6 +2,35 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
+// Define upload directory
+define('UPLOAD_DIR', 'uploads/blog_posts/');
+
+// Function to handle file uploads
+function handle_upload($file_input_name, $current_image_path = null) {
+    if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
+        // Create upload directory if it doesn't exist
+        if (!is_dir(UPLOAD_DIR)) {
+            mkdir(UPLOAD_DIR, 0777, true);
+        }
+
+        $file_tmp_path = $_FILES[$file_input_name]['tmp_name'];
+        $file_name = $_FILES[$file_input_name]['name'];
+        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+        $new_file_name = uniqid() . '_' . time() . '.' . $file_extension;
+        $dest_path = UPLOAD_DIR . $new_file_name;
+
+        if (move_uploaded_file($file_tmp_path, $dest_path)) {
+            // If it's an update and there was an old image, delete it
+            if ($current_image_path && file_exists($current_image_path)) {
+                unlink($current_image_path);
+            }
+            return $dest_path;
+        }
+    }
+    // Return the old path if no new file is uploaded during an update
+    return $current_image_path;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -60,7 +89,7 @@ if (isset($_POST['create_post'])) {
     $slug = $_POST['slug'];
     $content = $_POST['content'];
     $excerpt = $_POST['excerpt'];
-    $featured_image = $_POST['featured_image'];
+    $featured_image = handle_upload('featured_image');
     $author_id = $_SESSION['user_id'];
     $category = $_POST['category'];
     $tags = $_POST['tags'];
@@ -83,11 +112,18 @@ if (isset($_POST['create_post'])) {
 // Update blog post
 if (isset($_POST['update_post'])) {
     $post_id = $_POST['post_id'];
+
+    // Fetch current image path
+    $stmt = $pdo->prepare("SELECT featured_image FROM blog_posts WHERE id = ?");
+    $stmt->execute([$post_id]);
+    $current_item = $stmt->fetch(PDO::FETCH_ASSOC);
+    $current_image = $current_item ? $current_item['featured_image'] : null;
+
     $title = $_POST['title'];
     $slug = $_POST['slug'];
     $content = $_POST['content'];
     $excerpt = $_POST['excerpt'];
-    $featured_image = $_POST['featured_image'];
+    $featured_image = handle_upload('featured_image', $current_image);
     $category = $_POST['category'];
     $tags = $_POST['tags'];
     $status = $_POST['status'];
@@ -367,7 +403,7 @@ require_once 'includes/header.php';
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form method="POST">
+            <form method="POST" action="manage_blog_posts.php" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -394,8 +430,8 @@ require_once 'includes/header.php';
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="featured_image">Featured Image URL</label>
-                                <input type="url" class="form-control" id="featured_image" name="featured_image">
+                                <label for="featured_image">Featured Image</label>
+                                <input type="file" class="form-control-file" id="featured_image" name="featured_image" accept="image/*">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -461,7 +497,7 @@ require_once 'includes/header.php';
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form method="POST">
+            <form method="POST" action="manage_blog_posts.php" enctype="multipart/form-data">
                 <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
                 <div class="modal-body">
                     <div class="row">
@@ -489,8 +525,15 @@ require_once 'includes/header.php';
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="edit_featured_image<?php echo $post['id']; ?>">Featured Image URL</label>
-                                <input type="url" class="form-control" id="edit_featured_image<?php echo $post['id']; ?>" name="featured_image" value="<?php echo htmlspecialchars($post['featured_image']); ?>">
+                                <label for="edit_featured_image_<?php echo $post['id']; ?>">New Featured Image (optional)</label>
+                                <input type="file" class="form-control-file" id="edit_featured_image_<?php echo $post['id']; ?>" name="featured_image" accept="image/*">
+                                <?php if (!empty($post['featured_image'])): ?>
+                                    <div class="mt-2">
+                                        <small>Current Image:</small><br>
+                                        <img src="<?php echo htmlspecialchars($post['featured_image']); ?>" alt="Current Featured Image" style="max-width: 200px; height: auto;">
+                                        <a href="<?php echo htmlspecialchars($post['featured_image']); ?>" target="_blank" class="ml-2">View</a>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="col-md-6">

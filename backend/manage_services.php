@@ -2,6 +2,35 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
+// Define upload directory
+define('UPLOAD_DIR', 'uploads/services/');
+
+// Function to handle file uploads
+function handle_upload($file_input_name, $current_image_path = null) {
+    if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
+        // Create upload directory if it doesn't exist
+        if (!is_dir(UPLOAD_DIR)) {
+            mkdir(UPLOAD_DIR, 0777, true);
+        }
+
+        $file_tmp_path = $_FILES[$file_input_name]['tmp_name'];
+        $file_name = $_FILES[$file_input_name]['name'];
+        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+        $new_file_name = uniqid() . '_' . time() . '.' . $file_extension;
+        $dest_path = UPLOAD_DIR . $new_file_name;
+
+        if (move_uploaded_file($file_tmp_path, $dest_path)) {
+            // If it's an update and there was an old image, delete it
+            if ($current_image_path && file_exists($current_image_path)) {
+                unlink($current_image_path);
+            }
+            return $dest_path;
+        }
+    }
+    // Return the old path if no new file is uploaded during an update
+    return $current_image_path;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -46,7 +75,7 @@ if (isset($_POST['create_service'])) {
     $description = $_POST['description'];
     $short_description = $_POST['short_description'];
     $icon = $_POST['icon'];
-    $image = $_POST['image'];
+    $image = handle_upload('image');
     $price = $_POST['price'] ? floatval($_POST['price']) : null;
     $duration = $_POST['duration'];
     $features = $_POST['features'] ? json_encode(explode(',', $_POST['features'])) : null;
@@ -68,11 +97,18 @@ if (isset($_POST['create_service'])) {
 // Update service
 if (isset($_POST['update_service'])) {
     $service_id = $_POST['service_id'];
+
+    // Fetch the current image path to pass to the handler for deletion
+    $stmt = $pdo->prepare("SELECT image FROM services WHERE id = ?");
+    $stmt->execute([$service_id]);
+    $current_service = $stmt->fetch(PDO::FETCH_ASSOC);
+    $current_image_path = $current_service ? $current_service['image'] : null;
+
     $name = $_POST['name'];
     $description = $_POST['description'];
     $short_description = $_POST['short_description'];
     $icon = $_POST['icon'];
-    $image = $_POST['image'];
+    $image = handle_upload('image', $current_image_path);
     $price = $_POST['price'] ? floatval($_POST['price']) : null;
     $duration = $_POST['duration'];
     $features = $_POST['features'] ? json_encode(explode(',', $_POST['features'])) : null;
@@ -336,8 +372,8 @@ require_once 'includes/header.php';
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="image">Image URL</label>
-                                    <input type="url" class="form-control" id="image" name="image">
+                                    <label for="image">Image</label>
+                                    <input type="file" class="form-control-file" id="image" name="image" accept="image/*">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -495,7 +531,7 @@ require_once 'includes/header.php';
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="service_id" value="<?php echo $service['id']; ?>">
                     <div class="modal-body">
                         <div class="row">
@@ -523,8 +559,11 @@ require_once 'includes/header.php';
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="edit_image<?php echo $service['id']; ?>">Image URL</label>
-                                    <input type="url" class="form-control" id="edit_image<?php echo $service['id']; ?>" name="image" value="<?php echo htmlspecialchars($service['image']); ?>">
+                                    <label for="edit_image_<?php echo $service['id']; ?>">New Image (optional)</label>
+                                    <input type="file" class="form-control-file" id="edit_image_<?php echo $service['id']; ?>" name="image" accept="image/*">
+                                    <?php if ($service['image']): ?>
+                                        <small class="form-text text-muted">Current: <a href="<?php echo htmlspecialchars($service['image']); ?>" target="_blank">View Image</a></small>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div class="col-md-6">

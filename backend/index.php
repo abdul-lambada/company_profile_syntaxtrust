@@ -2,9 +2,13 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
-// Define base constants
+// Define base constants (dynamic base URL for backend)
 if (!defined('BASE_URL')) {
-    define('BASE_URL', 'http://localhost/company_profile_syntaxtrust/backend_new/');
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    // Build base path up to and including the current directory (backend/)
+    $dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/backend/index.php')), '/');
+    define('BASE_URL', $scheme . '://' . $host . $dir . '/');
 }
 
 // Check if user is logged in
@@ -202,7 +206,7 @@ require_once 'includes/header.php';
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <a href="#" class="btn btn-sm btn-info">View</a>
+                                                        <a href="manage_contact_inquiries.php?search=<?php echo urlencode($inquiry['email']); ?>" class="btn btn-sm btn-info">View</a>
                                                     </td>
                                                 </tr>
                                                 <?php 
@@ -244,8 +248,8 @@ require_once 'includes/header.php';
                                         <a href="manage_settings.php" class="list-group-item list-group-item-action">
                                             <i class="fas fa-cog fa-fw mr-2"></i>Manage Settings
                                         </a>
-                                        <a href="manage_inquiries.php" class="list-group-item list-group-item-action">
-                                            <i class="fas fa-envelope fa-fw mr-2"></i>Manage Inquiries
+                                        <a href="manage_contact_inquiries.php" class="list-group-item list-group-item-action">
+                                            <i class="fas fa-envelope fa-fw mr-2"></i>Manage Contact Inquiries
                                         </a>
                                     </div>
                                 </div>
@@ -335,25 +339,7 @@ require_once 'includes/header.php';
         <i class="fas fa-angle-up"></i>
     </a>
 
-    <!-- Logout Modal-->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="logout.php">Logout</a>
-                </div>
-            </div>
-        </div>
-    </div>
+    
 
     <?php require_once 'includes/scripts.php'; ?>
 

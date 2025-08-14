@@ -2,6 +2,35 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
+// Define upload directory
+define('UPLOAD_DIR', 'uploads/testimonials/');
+
+// Function to handle file uploads
+function handle_upload($file_input_name, $current_image_path = null) {
+    if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
+        // Create upload directory if it doesn't exist
+        if (!is_dir(UPLOAD_DIR)) {
+            mkdir(UPLOAD_DIR, 0777, true);
+        }
+
+        $file_tmp_path = $_FILES[$file_input_name]['tmp_name'];
+        $file_name = $_FILES[$file_input_name]['name'];
+        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+        $new_file_name = uniqid() . '_' . time() . '.' . $file_extension;
+        $dest_path = UPLOAD_DIR . $new_file_name;
+
+        if (move_uploaded_file($file_tmp_path, $dest_path)) {
+            // If it's an update and there was an old image, delete it
+            if ($current_image_path && file_exists($current_image_path)) {
+                unlink($current_image_path);
+            }
+            return $dest_path;
+        }
+    }
+    // Return the old path if no new file is uploaded during an update
+    return $current_image_path;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -16,8 +45,21 @@ $message_type = '';
 if (isset($_POST['delete_testimonial']) && isset($_POST['testimonial_id'])) {
     $testimonial_id = $_POST['testimonial_id'];
     try {
+        // First, get the image path to delete the file
+        $stmt = $pdo->prepare("SELECT client_image FROM testimonials WHERE id = ?");
+        $stmt->execute([$testimonial_id]);
+        $testimonial = $stmt->fetch(PDO::FETCH_ASSOC);
+        $image_to_delete = $testimonial ? $testimonial['client_image'] : null;
+
+        // Then, delete the database record
         $stmt = $pdo->prepare("DELETE FROM testimonials WHERE id = ?");
         $stmt->execute([$testimonial_id]);
+
+        // If the record was deleted and an image exists, delete the file
+        if ($stmt->rowCount() > 0 && $image_to_delete && file_exists($image_to_delete)) {
+            unlink($image_to_delete);
+        }
+
         $message = "Testimonial deleted successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -59,17 +101,17 @@ if (isset($_POST['create_testimonial'])) {
     $client_name = $_POST['client_name'];
     $client_position = $_POST['client_position'];
     $client_company = $_POST['client_company'];
-    $client_image = $_POST['client_image'];
-    $testimonial_text = $_POST['testimonial_text'];
+    $client_image = handle_upload('client_image');
+    $content = $_POST['content'];
     $rating = intval($_POST['rating']);
-    $project_type = $_POST['project_type'];
+    $project_name = $_POST['project_name'];
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $sort_order = intval($_POST['sort_order']);
     
     try {
-        $stmt = $pdo->prepare("INSERT INTO testimonials (client_name, client_position, client_company, client_image, testimonial_text, rating, project_type, is_featured, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$client_name, $client_position, $client_company, $client_image, $testimonial_text, $rating, $project_type, $is_featured, $is_active, $sort_order]);
+                $stmt = $pdo->prepare("INSERT INTO testimonials (client_name, client_position, client_company, client_image, content, rating, project_name, is_featured, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$client_name, $client_position, $client_company, $client_image, $content, $rating, $project_name, $is_featured, $is_active, $sort_order]);
         $message = "Testimonial created successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -81,20 +123,27 @@ if (isset($_POST['create_testimonial'])) {
 // Update testimonial
 if (isset($_POST['update_testimonial'])) {
     $testimonial_id = $_POST['testimonial_id'];
+
+    // Fetch current image path
+    $stmt = $pdo->prepare("SELECT client_image FROM testimonials WHERE id = ?");
+    $stmt->execute([$testimonial_id]);
+    $current_item = $stmt->fetch(PDO::FETCH_ASSOC);
+    $current_image = $current_item ? $current_item['client_image'] : null;
+
     $client_name = $_POST['client_name'];
     $client_position = $_POST['client_position'];
     $client_company = $_POST['client_company'];
-    $client_image = $_POST['client_image'];
-    $testimonial_text = $_POST['testimonial_text'];
+    $client_image = handle_upload('client_image', $current_image);
+    $content = $_POST['content'];
     $rating = intval($_POST['rating']);
-    $project_type = $_POST['project_type'];
+    $project_name = $_POST['project_name'];
     $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $sort_order = intval($_POST['sort_order']);
     
     try {
-        $stmt = $pdo->prepare("UPDATE testimonials SET client_name = ?, client_position = ?, client_company = ?, client_image = ?, testimonial_text = ?, rating = ?, project_type = ?, is_featured = ?, is_active = ?, sort_order = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$client_name, $client_position, $client_company, $client_image, $testimonial_text, $rating, $project_type, $is_featured, $is_active, $sort_order, $testimonial_id]);
+                $stmt = $pdo->prepare("UPDATE testimonials SET client_name = ?, client_position = ?, client_company = ?, client_image = ?, content = ?, rating = ?, project_name = ?, is_featured = ?, is_active = ?, sort_order = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$client_name, $client_position, $client_company, $client_image, $content, $rating, $project_name, $is_featured, $is_active, $sort_order, $testimonial_id]);
         $message = "Testimonial updated successfully!";
         $message_type = "success";
     } catch (PDOException $e) {
@@ -364,7 +413,7 @@ require_once 'includes/header.php';
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form method="POST" action="">
+                <form method="POST" action="manage_testimonials.php" enctype="multipart/form-data">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
@@ -381,18 +430,12 @@ require_once 'includes/header.php';
                                     <input type="text" class="form-control" id="client_company" name="client_company">
                                 </div>
                                 <div class="form-group">
-                                    <label for="client_image">Client Image URL</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="client_image" name="client_image">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary" type="button" id="previewImage">Preview</button>
-                                        </div>
-                                    </div>
-                                    <div id="imagePreview" class="mt-2 text-center"></div>
+                                    <label for="client_image_create">Client Image</label>
+                                    <input type="file" class="form-control-file" id="client_image_create" name="client_image" accept="image/*">
                                 </div>
                                 <div class="form-group">
-                                    <label for="project_type">Project Type</label>
-                                    <input type="text" class="form-control" id="project_type" name="project_type" placeholder="e.g., Web Development, Mobile App">
+                                    <label for="project_name">Project Type</label>
+                                    <input type="text" class="form-control" id="project_name" name="project_name" placeholder="e.g., Web Development, Mobile App">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -408,8 +451,8 @@ require_once 'includes/header.php';
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="testimonial_text">Testimonial Text *</label>
-                                    <textarea class="form-control" id="testimonial_text" name="testimonial_text" rows="5" required></textarea>
+                                    <label for="content">Testimonial Text *</label>
+                                    <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
@@ -513,9 +556,9 @@ require_once 'includes/header.php';
                                 </p>
                             <?php endif; ?>
                             
-                            <?php if (!empty($testimonial['project_type'])): ?>
+                            <?php if (!empty($testimonial['project_name'])): ?>
                                 <p class="mb-2">
-                                    <span class="badge badge-primary"><?php echo htmlspecialchars($testimonial['project_type']); ?></span>
+                                    <span class="badge badge-primary"><?php echo htmlspecialchars($testimonial['project_name']); ?></span>
                                 </p>
                             <?php endif; ?>
                             
@@ -558,7 +601,7 @@ require_once 'includes/header.php';
                                 </div>
                                 
                                 <div class="testimonial-text mb-4">
-                                    <?php echo nl2br(htmlspecialchars($testimonial['testimonial_text'])); ?>
+                                    <?php echo nl2br(htmlspecialchars($testimonial['content'])); ?>
                                 </div>
                                 
                                 <div class="d-flex justify-content-between align-items-center">
@@ -582,10 +625,10 @@ require_once 'includes/header.php';
                                 </div>
                             <?php endif; ?>
                             
-                            <?php if (!empty($testimonial['project_type'])): ?>
+                            <?php if (!empty($testimonial['project_name'])): ?>
                                 <div class="mt-3">
                                     <h6>Project Type</h6>
-                                    <p class="mb-0"><?php echo htmlspecialchars($testimonial['project_type']); ?></p>
+                                    <p class="mb-0"><?php echo htmlspecialchars($testimonial['project_name']); ?></p>
                                 </div>
                             <?php endif; ?>
                             
@@ -627,7 +670,7 @@ require_once 'includes/header.php';
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form method="POST" action="">
+                <form method="POST" action="manage_testimonials.php" enctype="multipart/form-data">
                     <input type="hidden" name="testimonial_id" value="<?php echo $testimonial['id']; ?>">
                     <div class="modal-body">
                         <div class="row">
@@ -638,51 +681,50 @@ require_once 'includes/header.php';
                                 </div>
                                 <div class="form-group">
                                     <label for="client_position_edit<?php echo $testimonial['id']; ?>">Client Position</label>
-                                    <input type="text" class="form-control" id="client_position_edit<?php echo $testimonial['id']; ?>" name="client_position" value="<?php echo htmlspecialchars($testimonial['client_position']); ?>">
+                                    <input type="text" class="form-control" id="client_position_edit<?php echo $testimonial['id']; ?>" name="client_position" value="<?php echo htmlspecialchars($testimonial['client_position'] ?? ''); ?>">
                                 </div>
                                 <div class="form-group">
                                     <label for="client_company_edit<?php echo $testimonial['id']; ?>">Company</label>
-                                    <input type="text" class="form-control" id="client_company_edit<?php echo $testimonial['id']; ?>" name="client_company" value="<?php echo htmlspecialchars($testimonial['client_company']); ?>">
+                                    <input type="text" class="form-control" id="client_company_edit<?php echo $testimonial['id']; ?>" name="client_company" value="<?php echo htmlspecialchars($testimonial['client_company'] ?? ''); ?>">
                                 </div>
                                 <div class="form-group">
-                                    <label for="client_image_edit<?php echo $testimonial['id']; ?>">Client Image URL</label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="client_image_edit<?php echo $testimonial['id']; ?>" name="client_image" value="<?php echo htmlspecialchars($testimonial['client_image']); ?>">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary" type="button" id="previewImageEdit<?php echo $testimonial['id']; ?>">Preview</button>
+                                    <label for="client_image_edit<?php echo $testimonial['id']; ?>">New Client Image (optional)</label>
+                                    <input type="file" class="form-control-file" id="client_image_edit<?php echo $testimonial['id']; ?>" name="client_image" accept="image/*">
+                                    <?php if (!empty($testimonial['client_image'])):
+                                        $image_path = htmlspecialchars($testimonial['client_image']);
+                                    ?>
+                                        <div class="mt-2">
+                                            <small>Current Image:</small><br>
+                                            <img src="<?php echo $image_path; ?>" alt="Current Client Image" style="max-width: 100px; height: auto;">
+                                            <a href="<?php echo $image_path; ?>" target="_blank" class="ml-2">View</a>
                                         </div>
-                                    </div>
-                                    <div id="imagePreviewEdit<?php echo $testimonial['id']; ?>" class="mt-2 text-center">
-                                        <?php if (!empty($testimonial['client_image'])): ?>
-                                            <img src="<?php echo htmlspecialchars($testimonial['client_image']); ?>" class="img-fluid rounded-circle" style="max-width: 150px; max-height: 150px;">
-                                        <?php endif; ?>
-                                    </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="form-group">
-                                    <label for="project_type_edit<?php echo $testimonial['id']; ?>">Project Type</label>
-                                    <input type="text" class="form-control" id="project_type_edit<?php echo $testimonial['id']; ?>" name="project_type" value="<?php echo htmlspecialchars($testimonial['project_type']); ?>" placeholder="e.g., Web Development, Mobile App">
+                                    <label for="project_name_edit<?php echo $testimonial['id']; ?>">Project Type</label>
+                                    <input type="text" class="form-control" id="project_name_edit<?php echo $testimonial['id']; ?>" name="project_name" value="<?php echo htmlspecialchars($testimonial['project_name'] ?? ''); ?>" placeholder="e.g., Web Development, Mobile App">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="rating_edit<?php echo $testimonial['id']; ?>">Rating (1-5)</label>
                                     <select class="form-control" id="rating_edit<?php echo $testimonial['id']; ?>" name="rating">
-                                        <option value="5" <?php echo $testimonial['rating'] == 5 ? 'selected' : ''; ?>>★★★★★ (5/5)</option>
-                                        <option value="4" <?php echo $testimonial['rating'] == 4 ? 'selected' : ''; ?>>★★★★☆ (4/5)</option>
-                                        <option value="3" <?php echo $testimonial['rating'] == 3 ? 'selected' : ''; ?>>★★★☆☆ (3/5)</option>
-                                        <option value="2" <?php echo $testimonial['rating'] == 2 ? 'selected' : ''; ?>>★★☆☆☆ (2/5)</option>
-                                        <option value="1" <?php echo $testimonial['rating'] == 1 ? 'selected' : ''; ?>>★☆☆☆☆ (1/5)</option>
+                                        <option value="5" <?php echo ($testimonial['rating'] ?? 0) == 5 ? 'selected' : ''; ?>>★★★★★ (5/5)</option>
+                                        <option value="4" <?php echo ($testimonial['rating'] ?? 0) == 4 ? 'selected' : ''; ?>>★★★★☆ (4/5)</option>
+                                        <option value="3" <?php echo ($testimonial['rating'] ?? 0) == 3 ? 'selected' : ''; ?>>★★★☆☆ (3/5)</option>
+                                        <option value="2" <?php echo ($testimonial['rating'] ?? 0) == 2 ? 'selected' : ''; ?>>★★☆☆☆ (2/5)</option>
+                                        <option value="1" <?php echo ($testimonial['rating'] ?? 0) == 1 ? 'selected' : ''; ?>>★☆☆☆☆ (1/5)</option>
                                         <option value="0" <?php echo empty($testimonial['rating']) ? 'selected' : ''; ?>>No Rating</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="testimonial_text_edit<?php echo $testimonial['id']; ?>">Testimonial Text *</label>
-                                    <textarea class="form-control" id="testimonial_text_edit<?php echo $testimonial['id']; ?>" name="testimonial_text" rows="5" required><?php echo htmlspecialchars($testimonial['testimonial_text']); ?></textarea>
+                                    <label for="content_edit<?php echo $testimonial['id']; ?>">Testimonial Text *</label>
+                                    <textarea class="form-control" id="content_edit<?php echo $testimonial['id']; ?>" name="content" rows="5" required><?php echo htmlspecialchars($testimonial['content'] ?? ''); ?></textarea>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="is_featured_edit<?php echo $testimonial['id']; ?>" name="is_featured" value="1" <?php echo $testimonial['is_featured'] ? 'checked' : ''; ?>>
+                                            <input class="form-check-input" type="checkbox" id="is_featured_edit<?php echo $testimonial['id']; ?>" name="is_featured" value="1" <?php echo !empty($testimonial['is_featured']) ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="is_featured_edit<?php echo $testimonial['id']; ?>">
                                                 Mark as Featured
                                             </label>
@@ -690,7 +732,7 @@ require_once 'includes/header.php';
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="is_active_edit<?php echo $testimonial['id']; ?>" name="is_active" value="1" <?php echo $testimonial['is_active'] ? 'checked' : ''; ?>>
+                                            <input class="form-check-input" type="checkbox" id="is_active_edit<?php echo $testimonial['id']; ?>" name="is_active" value="1" <?php echo !empty($testimonial['is_active']) ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="is_active_edit<?php echo $testimonial['id']; ?>">
                                                 Active
                                             </label>
@@ -699,7 +741,7 @@ require_once 'includes/header.php';
                                 </div>
                                 <div class="form-group mt-3">
                                     <label for="sort_order_edit<?php echo $testimonial['id']; ?>">Sort Order</label>
-                                    <input type="number" class="form-control" id="sort_order_edit<?php echo $testimonial['id']; ?>" name="sort_order" value="<?php echo intval($testimonial['sort_order']); ?>" min="0">
+                                    <input type="number" class="form-control" id="sort_order_edit<?php echo $testimonial['id']; ?>" name="sort_order" value="<?php echo intval($testimonial['sort_order'] ?? 0); ?>" min="0">
                                     <small class="form-text text-muted">Lower numbers appear first</small>
                                 </div>
                             </div>

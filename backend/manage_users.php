@@ -2,6 +2,31 @@
 require_once 'config/session.php';
 require_once 'config/database.php';
 
+// Define upload directory
+define('UPLOAD_DIR', 'uploads/users/');
+
+// Function to handle file uploads
+function handle_upload($file_input_name, $current_image_path = null) {
+    if (isset($_FILES[$file_input_name]) && $_FILES[$file_input_name]['error'] === UPLOAD_ERR_OK) {
+        if (!is_dir(UPLOAD_DIR)) {
+            mkdir(UPLOAD_DIR, 0777, true);
+        }
+        $file_tmp_path = $_FILES[$file_input_name]['tmp_name'];
+        $file_name = $_FILES[$file_input_name]['name'];
+        $file_extension = pathinfo($file_name, PATHINFO_EXTENSION);
+        $new_file_name = uniqid() . '_' . time() . '.' . $file_extension;
+        $dest_path = UPLOAD_DIR . $new_file_name;
+
+        if (move_uploaded_file($file_tmp_path, $dest_path)) {
+            if ($current_image_path && file_exists($current_image_path)) {
+                unlink($current_image_path);
+            }
+            return $dest_path;
+        }
+    }
+    return $current_image_path;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -48,7 +73,7 @@ if (isset($_POST['create_user'])) {
     $full_name = $_POST['full_name'];
     $phone = $_POST['phone'];
     $user_type = $_POST['user_type'];
-    $profile_image = $_POST['profile_image'];
+    $profile_image = handle_upload('profile_image');
     $bio = $_POST['bio'];
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $email_verified = isset($_POST['email_verified']) ? 1 : 0;
@@ -67,12 +92,19 @@ if (isset($_POST['create_user'])) {
 // Update user
 if (isset($_POST['update_user'])) {
     $user_id = $_POST['user_id'];
+
+    // Fetch current image path
+    $stmt = $pdo->prepare("SELECT profile_image FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+    $current_user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $current_image = $current_user ? $current_user['profile_image'] : null;
+
     $username = $_POST['username'];
     $email = $_POST['email'];
     $full_name = $_POST['full_name'];
     $phone = $_POST['phone'];
     $user_type = $_POST['user_type'];
-    $profile_image = $_POST['profile_image'];
+    $profile_image = handle_upload('profile_image', $current_image);
     $bio = $_POST['bio'];
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $email_verified = isset($_POST['email_verified']) ? 1 : 0;
@@ -327,13 +359,13 @@ require_once 'includes/header.php';
     <div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="addUserModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">Add New User</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form method="POST" action="manage_users.php" enctype="multipart/form-data">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
@@ -369,8 +401,8 @@ require_once 'includes/header.php';
                                     <input type="tel" class="form-control" id="phone" name="phone">
                                 </div>
                                 <div class="form-group">
-                                    <label for="profile_image">Profile Image URL</label>
-                                    <input type="url" class="form-control" id="profile_image" name="profile_image">
+                                    <label for="profile_image">Profile Image</label>
+                                    <input type="file" class="form-control-file" id="profile_image" name="profile_image" accept="image/*">
                                 </div>
                                 <div class="form-group">
                                     <div class="form-check">
@@ -479,7 +511,7 @@ require_once 'includes/header.php';
     <div class="modal fade" id="editUserModal<?php echo $user['id']; ?>" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <form method="POST">
+                <form method="POST" action="manage_users.php" enctype="multipart/form-data">
                     <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                     <div class="modal-header bg-warning text-dark">
                         <h5 class="modal-title">Edit User: <?php echo htmlspecialchars($user['username']); ?></h5>
@@ -522,8 +554,15 @@ require_once 'includes/header.php';
                                     <input type="tel" class="form-control" id="edit_phone_<?php echo $user['id']; ?>" name="phone" value="<?php echo htmlspecialchars($user['phone']); ?>">
                                 </div>
                                 <div class="form-group">
-                                    <label for="edit_profile_image_<?php echo $user['id']; ?>">Profile Image URL</label>
-                                    <input type="url" class="form-control" id="edit_profile_image_<?php echo $user['id']; ?>" name="profile_image" value="<?php echo htmlspecialchars($user['profile_image']); ?>">
+                                    <label for="edit_profile_image_<?php echo $user['id']; ?>">New Profile Image (optional)</label>
+                                    <input type="file" class="form-control-file" id="edit_profile_image_<?php echo $user['id']; ?>" name="profile_image" accept="image/*">
+                                    <?php if (!empty($user['profile_image'])): ?>
+                                        <div class="mt-2">
+                                            <small>Current Image:</small><br>
+                                            <img src="<?php echo htmlspecialchars($user['profile_image']); ?>" alt="Current Profile Image" style="max-width: 100px; height: auto; border-radius: 50%;">
+                                            <a href="<?php echo htmlspecialchars($user['profile_image']); ?>" target="_blank" class="ml-2">View</a>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="form-group">
                                     <div class="form-check">

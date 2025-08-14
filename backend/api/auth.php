@@ -50,6 +50,8 @@ function handleLogin() {
             $_SESSION['user_username'] = $user['username'];
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['LAST_ACTIVITY'] = time();
+
+            session_write_close(); // Ensure session is saved before sending response
             
             echo json_encode([
                 'success' => true,
