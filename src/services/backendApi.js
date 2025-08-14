@@ -105,6 +105,19 @@ export const settingsService = {
     }
   },
 
+  // Get all settings as a key->value map
+  getAllSettingsMap: async () => {
+    const res = await settingsService.getAllSettings();
+    if (res?.success && Array.isArray(res.settings)) {
+      const map = {};
+      for (const s of res.settings) {
+        map[s.setting_key] = s.setting_value;
+      }
+      return { success: true, settingsMap: map };
+    }
+    return { success: false, settingsMap: {} };
+  },
+
   // Update setting
   updateSetting: async (settingData) => {
     try {

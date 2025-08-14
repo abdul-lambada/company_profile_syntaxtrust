@@ -9,6 +9,7 @@ import PageLoader from "./components/PageLoader";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./components/Login";
+import SeoHead from "./components/SeoHead";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <SeoHead />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>

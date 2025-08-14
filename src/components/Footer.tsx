@@ -1,29 +1,10 @@
-import { useState, useEffect } from "react";
 import { Code2, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
-import { settingsService } from "@/services/backendApi";
+import { useSettings } from "@/hooks/useSettings";
 
 const Footer = () => {
-  const [siteName, setSiteName] = useState("");
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await settingsService.getAllSettings();
-        if (response.success && Array.isArray(response.settings)) {
-          // Extract site name from settings
-          const name = response.settings.find((s: any) => s.setting_key === 'site_name')?.setting_value || "";
-          setSiteName(name);
-        }
-      } catch (error) {
-        console.error('Failed to fetch site name:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchSettings();
-  }, []);
+  const { settings, loading } = useSettings();
+  const settingsMap = settings as Record<string, any>;
+  const siteName = (settingsMap['site_name'] as string) || "";
   
   return (
     <footer className="bg-gray-800 text-white">
@@ -41,18 +22,26 @@ const Footer = () => {
               Mitra terpercaya untuk mahasiswa dan bisnis kecil. Kami menghadirkan website profesional dengan harga terjangkau untuk tugas kuliah, portfolio, dan bisnis Anda.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
-                <Linkedin className="w-5 h-5" />
-              </a>
+              {settingsMap['social_facebook'] && (
+                <a aria-label="Facebook" href={settingsMap['social_facebook']} target="_blank" rel="noreferrer noopener" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
+                  <Facebook className="w-5 h-5" />
+                </a>
+              )}
+              {settingsMap['social_twitter'] && (
+                <a aria-label="Twitter" href={settingsMap['social_twitter']} target="_blank" rel="noreferrer noopener" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
+                  <Twitter className="w-5 h-5" />
+                </a>
+              )}
+              {settingsMap['social_instagram'] && (
+                <a aria-label="Instagram" href={settingsMap['social_instagram']} target="_blank" rel="noreferrer noopener" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
+                  <Instagram className="w-5 h-5" />
+                </a>
+              )}
+              {settingsMap['social_linkedin'] && (
+                <a aria-label="LinkedIn" href={settingsMap['social_linkedin']} target="_blank" rel="noreferrer noopener" className="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center hover:bg-purple-600 transition-colors">
+                  <Linkedin className="w-5 h-5" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -72,22 +61,24 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-6">Kontak</h3>
             <ul className="space-y-3">
-              <li className="flex items-center gap-3">
-                <MapPin className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-300 text-sm">Jl. Cibiru No.01, 
-                  Sangkanhurip, <br />
-                  Kec. Sindang, <br />
-                  Kabupaten Majalengka, <br />
-                  Jawa Barat 45471</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-green-400" />
-                <span className="text-gray-300 text-sm">+6285156553226</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-purple-400" />
-                <span className="text-gray-300 text-sm">engineertekno@gmail.com</span>
-              </li>
+              {settingsMap['company_address'] && (
+                <li className="flex items-center gap-3">
+                  <MapPin className="w-4 h-4 text-blue-400" />
+                  <span className="text-gray-300 text-sm whitespace-pre-line">{settingsMap['company_address']}</span>
+                </li>
+              )}
+              {settingsMap['company_phone'] && (
+                <li className="flex items-center gap-3">
+                  <Phone className="w-4 h-4 text-green-400" />
+                  <span className="text-gray-300 text-sm">{settingsMap['company_phone']}</span>
+                </li>
+              )}
+              {settingsMap['company_email'] && (
+                <li className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-purple-400" />
+                  <span className="text-gray-300 text-sm">{settingsMap['company_email']}</span>
+                </li>
+              )}
             </ul>
           </div>
         </div>

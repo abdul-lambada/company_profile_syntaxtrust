@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Code, Sparkles } from "lucide-react";
-import { settingsService } from "@/services/backendApi";
+import { useSettings } from "@/hooks/useSettings";
 
 const Hero = () => {
   const [stats, setStats] = useState({
@@ -11,33 +11,17 @@ const Hero = () => {
     delivery: ""
   });
   
-  const [loading, setLoading] = useState(true);
+  const { settings, loading } = useSettings();
   
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await settingsService.getAllSettings();
-        if (response.success && Array.isArray(response.settings)) {
-          // Extract statistics from settings
-          const heroStats = {
-            students: response.settings.find((s: any) => s.setting_key === 'hero_students_count')?.setting_value || "",
-            businesses: response.settings.find((s: any) => s.setting_key === 'hero_businesses_count')?.setting_value || "",
-            price: response.settings.find((s: any) => s.setting_key === 'hero_price_text')?.setting_value || "",
-            delivery: response.settings.find((s: any) => s.setting_key === 'hero_delivery_time')?.setting_value || ""
-          };
-          
-          setStats(heroStats);
-        }
-      } catch (error) {
-        console.error('Failed to fetch hero statistics:', error);
-        // Keep using the hardcoded data if API fails
-      } finally {
-        setLoading(false);
-      }
+    const heroStats = {
+      students: (settings['hero_students_count'] as string) || "",
+      businesses: (settings['hero_businesses_count'] as string) || "",
+      price: (settings['hero_price_text'] as string) || "",
+      delivery: (settings['hero_delivery_time'] as string) || "",
     };
-    
-    fetchSettings();
-  }, []);
+    setStats(heroStats);
+  }, [settings]);
   
   return (
     <section className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700">

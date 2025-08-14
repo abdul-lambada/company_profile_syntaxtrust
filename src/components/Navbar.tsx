@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Code2 } from "lucide-react";
 import { useActiveSection } from "@/hooks/use-active-section";
-import { settingsService } from "@/services/backendApi";
+import { useSettings } from "@/hooks/useSettings";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [siteName, setSiteName] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { settings, loading } = useSettings();
+  const siteName = (settings?.site_name as string) || "";
 
   const navItems = [
     { name: "Beranda", href: "#home", id: "home" },
@@ -21,23 +21,10 @@ const Navbar = () => {
   ];
   
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await settingsService.getAllSettings();
-        if (response.success && Array.isArray(response.settings)) {
-          // Extract site name from settings
-          const name = response.settings.find((s: any) => s.setting_key === 'site_name')?.setting_value || "";
-          setSiteName(name);
-        }
-      } catch (error) {
-        console.error('Failed to fetch site name:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchSettings();
-  }, []);
+    if (siteName) {
+      document.title = `${siteName} - Website Profesional Terjangkau`;
+    }
+  }, [siteName]);
 
   const sectionIds = navItems.map(item => item.id);
   const activeSection = useActiveSection(sectionIds);
