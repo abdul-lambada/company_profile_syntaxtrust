@@ -6,7 +6,7 @@ import { settingsService } from "@/services/backendApi";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [siteName, setSiteName] = useState("SyntaxTrust");
+  const [siteName, setSiteName] = useState("");
   const [loading, setLoading] = useState(true);
 
   const navItems = [
@@ -23,15 +23,14 @@ const Navbar = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await settingsService.getSettings();
-        if (response.success) {
+        const response = await settingsService.getAllSettings();
+        if (response.success && Array.isArray(response.settings)) {
           // Extract site name from settings
-          const name = response.settings.find((s: any) => s.setting_key === 'site_name')?.setting_value || "SyntaxTrust";
+          const name = response.settings.find((s: any) => s.setting_key === 'site_name')?.setting_value || "";
           setSiteName(name);
         }
       } catch (error) {
         console.error('Failed to fetch site name:', error);
-        // Keep using the hardcoded data if API fails
       } finally {
         setLoading(false);
       }
@@ -60,7 +59,7 @@ const Navbar = () => {
             <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
               <Code2 className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-800">{siteName}</span>
+            <span className="text-xl font-bold text-gray-800">{siteName || (loading ? '...' : '')}</span>
           </div>
 
           {/* Desktop Menu */}

@@ -3,36 +3,7 @@ import { Code, Wrench, Plus, Bug } from "lucide-react";
 import { servicesService } from "@/services/backendApi";
 
 const Services = () => {
-  const [services, setServices] = useState([
-    {
-      icon: Code,
-      title: "Website Portfolio",
-      description: "Portfolio profesional untuk tugas kuliah, magang, dan karir masa depan",
-      features: ["Responsive Design", "SEO Optimized", "Fast Loading", "Modern UI/UX"],
-      color: "blue"
-    },
-    {
-      icon: Wrench,
-      title: "Website Bisnis Kecil",
-      description: "Website sederhana untuk UMKM, toko online, dan bisnis lokal",
-      features: ["UI/UX Improvement", "Performance Boost", "Security Update", "Feature Enhancement"],
-      color: "green"
-    },
-    {
-      icon: Plus,
-      title: "Website Tugas Kuliah",
-      description: "Website untuk tugas mata kuliah, project akhir, dan penelitian",
-      features: ["Custom Features", "Third-party Integration", "API Development", "Database Design"],
-      color: "purple"
-    },
-    {
-      icon: Bug,
-      title: "Perbaikan & Maintenance",
-      description: "Perbaikan bug, update fitur, dan maintenance website existing",
-      features: ["Bug Fixing", "Error Resolution", "Code Optimization", "WhatsApp Support"],
-      color: "orange"
-    }
-  ]);
+  const [services, setServices] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   
@@ -73,7 +44,6 @@ const Services = () => {
         }
       } catch (error) {
         console.error('Failed to fetch services:', error);
-        // Keep using the hardcoded data if API fails
       } finally {
         setLoading(false);
       }
@@ -137,7 +107,13 @@ const Services = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {services.map((service, index) => {
+          {loading && (
+            <div className="col-span-full text-center text-gray-500">Memuat layanan...</div>
+          )}
+          {!loading && services.length === 0 && (
+            <div className="col-span-full text-center text-gray-500">Belum ada layanan yang tersedia.</div>
+          )}
+          {!loading && services.map((service, index) => {
             const colors = getColorClasses(service.color);
             return (
               <div

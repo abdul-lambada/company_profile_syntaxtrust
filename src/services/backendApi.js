@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost/company_profile_syntaxtrust/backend/api';
+// Prefer Vite env, fallback to Vite proxy '/api'
+const envBase = import.meta?.env?.VITE_API_BASE_URL?.trim();
+let API_BASE_URL = envBase && envBase.length > 0
+  ? envBase
+  : '/api';
+// Normalize: remove trailing slash
+API_BASE_URL = API_BASE_URL.replace(/\/$/, '');
 
 // Create axios instance with default config
 const api = axios.create({

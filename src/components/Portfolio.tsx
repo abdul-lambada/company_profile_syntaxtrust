@@ -71,7 +71,13 @@ const Portfolio = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-          {projects.map((project, index) => (
+          {loading && (
+            <div className="col-span-full text-center text-gray-500">Memuat portfolio...</div>
+          )}
+          {!loading && projects.length === 0 && (
+            <div className="col-span-full text-center text-gray-500">Belum ada proyek untuk ditampilkan.</div>
+          )}
+          {!loading && projects.map((project, index) => (
             <Card key={index} className="group overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-200 shadow-lg bg-white">
               <div className="relative overflow-hidden">
                 <LazyImage 

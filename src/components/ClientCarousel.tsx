@@ -4,48 +4,7 @@ import { clientsService } from "@/services/backendApi";
 
 const ClientCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [clients, setClients] = useState([
-    {
-      name: "Mahasiswa IT",
-      logo: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=150&h=80&fit=crop&crop=center",
-      category: "Tugas Kuliah"
-    },
-    {
-      name: "Mahasiswa Desain",
-      logo: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=150&h=80&fit=crop&crop=center",
-      category: "Portfolio"
-    },
-    {
-      name: "UMKM Makanan",
-      logo: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=150&h=80&fit=crop&crop=center",
-      category: "Bisnis Kecil"
-    },
-    {
-      name: "Mahasiswa Bisnis",
-      logo: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=150&h=80&fit=crop&crop=center",
-      category: "Project Akhir"
-    },
-    {
-      name: "Toko Online",
-      logo: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=150&h=80&fit=crop&crop=center",
-      category: "E-commerce"
-    },
-    {
-      name: "Bisnis Kafe",
-      logo: "https://images.unsplash.com/photo-1554224155-165aa83f6b3a?w=150&h=80&fit=crop&crop=center",
-      category: "Bisnis Kecil"
-    },
-    {
-      name: "Mahasiswa TI",
-      logo: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150&h=80&fit=crop&crop=center",
-      category: "Tugas Kuliah"
-    },
-    {
-      name: "Startup Tech",
-      logo: "https://images.unsplash.com/photo-1551284184-9d8d167c1ef3?w=150&h=80&fit=crop&crop=center",
-      category: "Startup"
-    }
-  ]);
+  const [clients, setClients] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   
@@ -66,7 +25,6 @@ const ClientCarousel = () => {
         }
       } catch (error) {
         console.error('Failed to fetch clients:', error);
-        // Keep using the hardcoded data if API fails
       } finally {
         setLoading(false);
       }
@@ -85,7 +43,7 @@ const ClientCarousel = () => {
   }, [clients.length]);
 
   // Duplicate clients for seamless loop
-  const duplicatedClients = [...clients, ...clients];
+  const duplicatedClients = clients.length > 0 ? [...clients, ...clients] : [];
 
   return (
     <section className="py-16 bg-gray-50">

@@ -74,7 +74,13 @@ const Pricing = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {packages.map((pkg, index) => (
+          {loading && (
+            <div className="col-span-full text-center text-gray-500">Memuat paket harga...</div>
+          )}
+          {!loading && packages.length === 0 && (
+            <div className="col-span-full text-center text-gray-500">Belum ada paket yang tersedia.</div>
+          )}
+          {!loading && packages.map((pkg, index) => (
             <Card 
               key={index} 
               className={`relative p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-200 shadow-lg overflow-hidden group bg-white ${

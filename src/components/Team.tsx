@@ -5,7 +5,7 @@ import LazyImage from "./LazyImage";
 import { teamService } from "@/services/backendApi";
 
 const Team = () => {
-  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,81 +32,6 @@ const Team = () => {
         }
       } catch (error) {
         console.error('Failed to fetch team members:', error);
-        // Keep using the hardcoded data if API fails
-        setTeamMembers([
-          {
-            name: "Abdul Rizki",
-            position: "Full Stack Developer",
-            description: "Mahasiswa semester akhir yang expert dalam PHP, Laravel, dan JavaScript. Sudah membantu 50+ mahasiswa dengan tugas kuliah.",
-            image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&crop=face",
-            specialties: ["PHP", "Laravel", "Bootstrap", "MySQL"],
-            social: {
-              linkedin: "#",
-              github: "#",
-              email: "ahmad@syntaxtrust.com"
-            }
-          },
-          {
-            name: "Sari Indah",
-            position: "Frontend Developer",
-            description: "Fresh graduate yang spesialis UI/UX dengan keahlian dalam HTML, CSS, JavaScript, dan Bootstrap.",
-            image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
-            specialties: ["HTML5", "CSS3", "JavaScript", "Bootstrap"],
-            social: {
-              linkedin: "#",
-              github: "#",
-              email: "sari@syntaxtrust.com"
-            }
-          },
-          {
-            name: "Budi Santoso",
-            position: "Backend Developer",
-            description: "Mahasiswa TI yang fokus pada pengembangan backend dengan Node.js dan database MySQL.",
-            image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face",
-            specialties: ["Node.js", "Express", "MySQL", "API Development"],
-            social: {
-              linkedin: "#",
-              github: "#",
-              email: "budi@syntaxtrust.com"
-            }
-          },
-          {
-            name: "Lisa Permata",
-            position: "UI/UX Designer",
-            description: "Mahasiswa desain yang kreatif dan berfokus pada user experience yang user-friendly untuk mahasiswa.",
-            image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face",
-            specialties: ["Figma", "Adobe XD", "Photoshop", "UI/UX"],
-            social: {
-              linkedin: "#",
-              github: "#",
-              email: "lisa@syntaxtrust.com"
-            }
-          },
-          {
-            name: "Andi Pratama",
-            position: "Project Manager",
-            description: "Mahasiswa yang mengatur project dan memastikan delivery tepat waktu untuk tugas kuliah dan bisnis kecil.",
-            image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&crop=face",
-            specialties: ["Project Management", "Communication", "Planning", "Support"],
-            social: {
-              linkedin: "#",
-              github: "#",
-              email: "andi@syntaxtrust.com"
-            }
-          },
-          {
-            name: "Maya Sari",
-            position: "Customer Support",
-            description: "Mahasiswa yang fokus pada customer service dan memastikan kepuasan mahasiswa dan bisnis kecil.",
-            image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=300&h=300&fit=crop&crop=face",
-            specialties: ["Customer Service", "WhatsApp Support", "Documentation", "Training"],
-            social: {
-              linkedin: "#",
-              github: "#",
-              email: "maya@syntaxtrust.com"
-            }
-          }
-        ]);
       } finally {
         setLoading(false);
       }
@@ -132,7 +57,10 @@ const Team = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {teamMembers.map((member, index) => (
+          {loading && (
+            <div className="col-span-full text-center text-gray-500">Memuat data tim...</div>
+          )}
+          {!loading && teamMembers.map((member, index) => (
             <Card 
               key={index} 
               className="group p-8 text-center hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-200 shadow-lg bg-white overflow-hidden relative"

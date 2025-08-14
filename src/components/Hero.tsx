@@ -5,10 +5,10 @@ import { settingsService } from "@/services/backendApi";
 
 const Hero = () => {
   const [stats, setStats] = useState({
-    students: "200+",
-    businesses: "80+",
-    price: "Mulai Rp 299K",
-    delivery: "3-7"
+    students: "",
+    businesses: "",
+    price: "",
+    delivery: ""
   });
   
   const [loading, setLoading] = useState(true);
@@ -16,14 +16,14 @@ const Hero = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await settingsService.getSettings();
-        if (response.success) {
+        const response = await settingsService.getAllSettings();
+        if (response.success && Array.isArray(response.settings)) {
           // Extract statistics from settings
           const heroStats = {
-            students: response.settings.find((s: any) => s.setting_key === 'hero_students_count')?.setting_value || "200+",
-            businesses: response.settings.find((s: any) => s.setting_key === 'hero_businesses_count')?.setting_value || "80+",
-            price: response.settings.find((s: any) => s.setting_key === 'hero_price_text')?.setting_value || "Mulai Rp 299K",
-            delivery: response.settings.find((s: any) => s.setting_key === 'hero_delivery_time')?.setting_value || "3-7"
+            students: response.settings.find((s: any) => s.setting_key === 'hero_students_count')?.setting_value || "",
+            businesses: response.settings.find((s: any) => s.setting_key === 'hero_businesses_count')?.setting_value || "",
+            price: response.settings.find((s: any) => s.setting_key === 'hero_price_text')?.setting_value || "",
+            delivery: response.settings.find((s: any) => s.setting_key === 'hero_delivery_time')?.setting_value || ""
           };
           
           setStats(heroStats);
@@ -90,19 +90,19 @@ const Hero = () => {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto animate-fade-up" style={{animationDelay: '0.6s'}}>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.students}</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.students || (loading ? '...' : '')}</div>
             <div className="text-gray-700">Mahasiswa Puas</div>
           </div>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.businesses}</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.businesses || (loading ? '...' : '')}</div>
             <div className="text-gray-700">Bisnis Kecil</div>
           </div>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.price}</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.price || (loading ? '...' : '')}</div>
             <div className="text-gray-700">Harga Terjangkau</div>
           </div>
           <div className="glass-card text-center bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.delivery}</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{stats.delivery || (loading ? '...' : '')}</div>
             <div className="text-gray-700">Hari Selesai</div>
           </div>
         </div>

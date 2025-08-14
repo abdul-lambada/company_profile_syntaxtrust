@@ -90,12 +90,12 @@ const Contact = () => {
         });
       }, 200);
       
-      // Make real API call
+      // Make real API call (API expects subject, optional phone)
       const response = await contactService.submitInquiry({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        service: formData.service,
+        subject: formData.service, // store selected service as subject/title
         message: formData.message
       });
       
@@ -120,6 +120,7 @@ const Contact = () => {
         throw new Error(response.error || 'Failed to submit inquiry');
       }
     } catch (error) {
+      setSubmitStatus('error');
       // Reset error message after 5 seconds
       setTimeout(() => setSubmitStatus('idle'), 5000);
     } finally {
